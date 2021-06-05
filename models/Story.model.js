@@ -3,7 +3,7 @@ const ObjectId = Schema.Types.ObjectId;
 
 const storySchema = new Schema(
   {
-    user: { type: ObjectId, ref: "User" },
+    user: { type: ObjectId, ref: "User", required: true },
     text: String,
     category: [String],
     video_contributions: [{ type: ObjectId, ref: "Video" }],
