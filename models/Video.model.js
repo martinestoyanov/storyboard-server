@@ -5,7 +5,21 @@ const videoSchema = new Schema(
   {
     user: { type: ObjectId, ref: "User" },
     url: String,
-    categories: [String],
+    title: String,
+    genre: {
+      type: String,
+      enum: [
+        "Action/Adventure",
+        "Comedy",
+        "Drama",
+        "Fantasy",
+        "Horror",
+        "Romance",
+        "Romantic Comedy",
+        "Sci-Fi",
+        "Thriller/Mystery",
+      ],
+    },
     upvotes: Number,
   },
   {
