@@ -8,7 +8,21 @@ const videoSchema = new Schema(
       type: String,
       required: true,
     },
-    categories: [String],
+    title: String,
+    genre: {
+      type: String,
+      enum: [
+        "Action/Adventure",
+        "Comedy",
+        "Drama",
+        "Fantasy",
+        "Horror",
+        "Romance",
+        "Romantic Comedy",
+        "Sci-Fi",
+        "Thriller/Mystery",
+      ],
+    },
     upvotes: {
       type: Number,
       default: 0,
