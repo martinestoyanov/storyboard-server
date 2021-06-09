@@ -3,8 +3,11 @@ const ObjectId = Schema.Types.ObjectId;
 
 const videoSchema = new Schema(
   {
-    user: { type: ObjectId, ref: "User" },
-    url: String,
+    user: { type: ObjectId, ref: "User", required: true },
+    url: {
+      type: String,
+      required: true,
+    },
     title: String,
     genre: {
       type: String,
@@ -20,7 +23,10 @@ const videoSchema = new Schema(
         "Thriller/Mystery",
       ],
     },
-    upvotes: Number,
+    upvotes: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
