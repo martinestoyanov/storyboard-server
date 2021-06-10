@@ -13,6 +13,7 @@ router.get("/story/:id", (req, res, next) => {
     })
     .catch((error) => {
       console.log(error);
+      res.status(404).json(error);
       next(error);
     });
 });
@@ -25,6 +26,7 @@ router.post("/story/:id/update", (req, res, next) => {
     })
     .catch((error) => {
       console.log(error);
+      res.status(404).json(error);
       next(error);
     });
 });
@@ -37,6 +39,7 @@ router.post("/story/:id/delete", (req, res, next) => {
     })
     .catch((error) => {
       console.log(error);
+      res.status(404).json(error);
       next(error);
     });
 });
@@ -49,6 +52,7 @@ router.post("/story/create", (req, res, next) => {
     })
     .catch((error) => {
       console.log(error);
+      res.status(404).json(error);
       next(error);
     });
 });
