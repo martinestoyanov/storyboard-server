@@ -1,11 +1,11 @@
 const router = require("express").Router();
-const storyRoutes = require("./auth");
+// const storyRoutes = require("./auth");
 
 const Story = require("../models/Story.model");
 
-router.use("/auth", storyRoutes);
+// router.use("/auth", storyRoutes);
 /* GET home page */
-router.get("/story/:id", (req, res, next) => {
+router.get("/:id", (req, res, next) => {
   Story.findById(req.params.id)
     .then((story) => {
       console.log("READ: ", story);
@@ -18,7 +18,7 @@ router.get("/story/:id", (req, res, next) => {
     });
 });
 
-router.post("/story/:id/update", (req, res, next) => {
+router.post("/:id/update", (req, res, next) => {
   Story.findByIdAndUpdate(req.params.id, req.body)
     .then((story) => {
       console.log("UPDATE: ", story);
@@ -31,7 +31,7 @@ router.post("/story/:id/update", (req, res, next) => {
     });
 });
 
-router.post("/story/:id/delete", (req, res, next) => {
+router.post("/:id/delete", (req, res, next) => {
   Story.findByIdAndDelete(req.params.id)
     .then((story) => {
       console.log("DELETE: ", story);
@@ -44,7 +44,7 @@ router.post("/story/:id/delete", (req, res, next) => {
     });
 });
 
-router.post("/story/create", (req, res, next) => {
+router.post("/create", (req, res, next) => {
   Story.create(req.body)
     .then((story) => {
       console.log("CREATE: ", story);

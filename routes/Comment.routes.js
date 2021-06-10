@@ -1,11 +1,11 @@
 const router = require("express").Router();
-const commentRoutes = require("./auth");
+// const commentRoutes = require("./auth");
 
 const Comment = require("../models/Comment.model");
 
-router.use("/auth", commentRoutes);
+// router.use("/auth", commentRoutes);
 /* GET home page */
-router.get("/comment/:id", (req, res, next) => {
+router.get("/:id", (req, res, next) => {
   Comment.findById(req.params.id)
     .then((comment) => {
       console.log("READ: ", comment);
@@ -18,7 +18,7 @@ router.get("/comment/:id", (req, res, next) => {
     });
 });
 
-router.post("/comment/:id/update", (req, res, next) => {
+router.post("/:id/update", (req, res, next) => {
   Comment.findByIdAndUpdate(req.params.id, req.body)
     .then((comment) => {
       console.log("UPDATE: ", comment);
@@ -31,7 +31,7 @@ router.post("/comment/:id/update", (req, res, next) => {
     });
 });
 
-router.post("/comment/:id/delete", (req, res, next) => {
+router.post("/:id/delete", (req, res, next) => {
   Comment.findByIdAndDelete(req.params.id)
     .then((comment) => {
       console.log("DELETE: ", comment);
@@ -44,7 +44,7 @@ router.post("/comment/:id/delete", (req, res, next) => {
     });
 });
 
-router.post("/comment/create", (req, res, next) => {
+router.post("/create", (req, res, next) => {
   Comment.create(req.body)
     .then((comment) => {
       console.log("CREATE: ", comment);
