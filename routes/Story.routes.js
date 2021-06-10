@@ -1,0 +1,56 @@
+const router = require("express").Router();
+const storyRoutes = require("./auth");
+
+const Story = require("../models/Story.model");
+
+router.use("/auth", storyRoutes);
+/* GET home page */
+router.get("/story/:id", (req, res, next) => {
+  Story.findById(req.params.id)
+    .then((story) => {
+      console.log("READ: ", story);
+      res.status(200).json(story);
+    })
+    .catch((error) => {
+      console.log(error);
+      next(error);
+    });
+});
+
+router.post("/story/:id/update", (req, res, next) => {
+  Story.findByIdAndUpdate(req.params.id, req.body)
+    .then((story) => {
+      console.log("UPDATE: ", story);
+      res.status(200).json(story);
+    })
+    .catch((error) => {
+      console.log(error);
+      next(error);
+    });
+});
+
+router.post("/story/:id/delete", (req, res, next) => {
+  Story.findByIdAndDelete(req.params.id)
+    .then((story) => {
+      console.log("DELETE: ", story);
+      res.status(200).json(story);
+    })
+    .catch((error) => {
+      console.log(error);
+      next(error);
+    });
+});
+
+router.post("/story/create", (req, res, next) => {
+  Story.create(req.body)
+    .then((story) => {
+      console.log("CREATE: ", story);
+      res.status(200).json(story);
+    })
+    .catch((error) => {
+      console.log(error);
+      next(error);
+    });
+});
+
+module.exports = router;
