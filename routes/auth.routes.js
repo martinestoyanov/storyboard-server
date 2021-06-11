@@ -104,6 +104,7 @@ router.post("/signup", isLoggedOut, (req, res) => {
 });
 
 router.post("/login", isLoggedOut, (req, res, next) => {
+  // console.log(req.body);
   const { username, password } = req.body;
 
   if (!username) {
