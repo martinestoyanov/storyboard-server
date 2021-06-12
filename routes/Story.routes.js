@@ -1,9 +1,10 @@
 const router = require("express").Router();
-// const storyRoutes = require("./auth");
 
 const Story = require("../models/Story.model");
 
-// router.use("/auth", storyRoutes);
+const isLoggedIn = require("../middleware/isLoggedIn");
+
+router.use("/", isLoggedIn);
 /* GET home page */
 router.get("/:id", (req, res, next) => {
   Story.findById(req.params.id)

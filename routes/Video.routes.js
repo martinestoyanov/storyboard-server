@@ -1,9 +1,10 @@
 const router = require("express").Router();
-// const videoRoutes = require("./auth");
 
 const Video = require("../models/Video.model");
 
-// router.use("/auth", videoRoutes);
+const isLoggedIn = require("../middleware/isLoggedIn");
+
+router.use("/", isLoggedIn);
 /* GET home page */
 router.get("/:id", (req, res, next) => {
   Video.findById(req.params.id)
