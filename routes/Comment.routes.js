@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const Comment = require("../models/Comment.model");
 const isLoggedIn = require("../middleware/isLoggedIn");
+const semantics = require("../middleware/semantics");
 
 router.use("/", isLoggedIn);
 /* GET home page */
@@ -43,7 +44,7 @@ router.post("/:id/delete", (req, res, next) => {
     });
 });
 
-router.post("/create", (req, res, next) => {
+router.post("/create", semantics.analyzeSemantics, (req, res, next) => {
   Comment.create(req.body)
     .then((comment) => {
       console.log("CREATE: ", comment);

@@ -1,6 +1,5 @@
 const router = require("express").Router();
 const authRoutes = require("./auth.routes");
-const api = require("./api.routes");
 const commentRoutes = require("./Comment.routes");
 const storyRoutes = require("./Story.routes");
 const videoRoutes = require("./Video.routes");
@@ -11,7 +10,6 @@ router.get("/", (req, res, next) => {
 });
 
 router.use("/auth", authRoutes);
-router.use("/api", api);
 router.use("/comment", commentRoutes);
 router.use("/story", storyRoutes);
 router.use("/video", videoRoutes);
