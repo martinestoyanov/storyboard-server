@@ -1,9 +1,8 @@
 const router = require("express").Router();
-// const commentRoutes = require("./auth");
-
 const Comment = require("../models/Comment.model");
+const isLoggedIn = require("../middleware/isLoggedIn");
 
-// router.use("/auth", commentRoutes);
+router.use("/", isLoggedIn);
 /* GET home page */
 router.get("/:id", (req, res, next) => {
   Comment.findById(req.params.id)
