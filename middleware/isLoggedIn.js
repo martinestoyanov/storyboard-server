@@ -14,8 +14,9 @@ module.exports = (req, res, next) => {
           .status(404)
           .json({ errorMessage: "No session started for this user" });
       }
-      // makes the user available in `req.user` from now onwards
-      req.user = session.user;
+      // makes the user available in `req.body.user` from now onwards
+      // req.user = session.user;
+      req.body.user = session.user;
       next();
     })
     .catch((err) => {

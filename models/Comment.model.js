@@ -7,6 +7,7 @@ const commentSchema = new Schema(
     text: String,
     story: { type: ObjectId, ref: "Story" },
     video: { type: ObjectId, ref: "Video" },
+    sentiment: Object,
   },
   {
     timestamps: true,
