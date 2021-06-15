@@ -8,7 +8,17 @@ const storySchema = new Schema(
     text: String,
     genre: {
       type: String,
-      enum: ["Action/Adventure", "Comedy", "Drama", "Fantasy", "Horror", "Romance", "Romantic Comedy", "Sci-Fi", "Thriller/Mystery"]
+      enum: [
+        "Action/Adventure",
+        "Comedy",
+        "Drama",
+        "Fantasy",
+        "Horror",
+        "Romance",
+        "Romantic Comedy",
+        "Sci-Fi",
+        "Thriller/Mystery",
+      ],
     },
     video_contributions: [{ type: ObjectId, ref: "Video" }],
   },
