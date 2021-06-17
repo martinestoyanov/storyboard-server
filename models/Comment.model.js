@@ -3,10 +3,11 @@ const ObjectId = Schema.Types.ObjectId;
 
 const commentSchema = new Schema(
   {
-    user: { type: ObjectId, ref: "User", required: true },
+    author: { type: ObjectId, ref: "User", required: true },
     text: String,
     story: { type: ObjectId, ref: "Story" },
     video: { type: ObjectId, ref: "Video" },
+    user: { type: ObjectId, ref: "User" },
     sentiment: Object,
   },
   {
