@@ -9,88 +9,96 @@ router.use("/", isLoggedIn);
 
 router.get("/index", (req, res, next) => {
   const query = req.query;
-  let userData = null;
+  const resHandler = (query, storyData) => {
+    if (query.start && query.end) {
+      //respond with stories in given range
+      let stories = storyData.slice(query.start, query.end + 1);
+      return res
+        .status(200)
+        .json({ stories: stories, total: storyData.length });
+    } else if (query.random) {
+      //respond with single random story
+      const randomStory = [
+        storyData[Math.floor(storyData.length * Math.random())],
+      ];
+      return res
+        .status(200)
+        .json({ stories: randomStory, total: storyData.length });
+    } else {
+      //respond with all stories
+      return res
+        .status(200)
+        .json({ stories: storyData, total: storyData.length });
+    }
+  };
+
   if (query.userName) {
     User.findOne({ username: userName })
+      .populate("stories")
       .then((user) => {
-        userData = user;
+        if (query.searchTerm) {
+          const storySearch = user.stories.filter((story) =>
+            story.title.includes(query.searchTerm)
+          );
+          if (query.genre) {
+            const storySearch = user.stories.filter(
+              (story) =>
+                story.title.includes(query.searchTerm) &&
+                story.genre === query.genre
+            );
+            return resHandler(query, storySearch);
+          } else return resHandler(query, storySearch);
+        } else if (query.genre) {
+          const storySearch = user.stories.filter(
+            (story) => story.genre === query.genre
+          );
+          return resHandler(query, storySearch);
+        } else {
+          return resHandler(query, user.stories);
+        }
       })
       .catch((error) => {
         //handle user retrieval error
         console.log(error);
         next(error);
       });
-  }
-
-  let storyData = [];
-  if (query.searchTerm) {
-    if (userData) {
-      //search the named story for the given user
-      Story.find({ user: userData._id, title: /query.searchTerm/i })
-        .then((stories) => {
-          storyData = stories;
-        })
-        .catch((error) => {
-          //handle story retrieval error
-          console.log(error);
-          next(error);
-        });
-    } else {
-      //search all stories with given name
-      Story.find({ title: /query.searchTerm/i })
-        .then((stories) => {
-          storyData = stories;
-        })
-        .catch((error) => {
-          //handle story retrieval error
-          console.log(error);
-          next(error);
-        });
-    }
+  } else if (query.searchTerm) {
+    Story.find({ title: /query.searchTerm/i })
+      .populate("comments")
+      .then((stories) => {
+        if (query.genre) {
+          const storySearch = stories.filter(
+            (story) => story.genre === query.genre
+          );
+          return resHandler(query, storySearch);
+        } else return resHandler(query, stories);
+      })
+      .catch((error) => {
+        //handle story retrieval error
+        console.log(error);
+        next(error);
+      });
   } else if (query.genre) {
-    if (userData) {
-      //list stories for user in supplied genres
-      Story.find({ user: userData._id, genre: query.genre })
-        .then((stories) => {
-          storyData = stories;
-        })
-        .catch((error) => {
-          //handle story retrieval error
-          console.log(error);
-          next(error);
-        });
-    } else {
-      //list stories for supplied genres
-      Story.find({ genre: query.genre })
-        .then((stories) => {
-          storyData = stories;
-        })
-        .catch((error) => {
-          //handle story retrieval error
-          console.log(error);
-          next(error);
-        });
-    }
-  }
-
-  if (query.start && query.end) {
-    //respond with stories in given range
-    let stories = storyData.slice(query.start, query.end + 1);
-    res.status(200).json({ stories: stories, total: storyData.length });
-  } else if (query.random) {
-    //respond with single random story
-    const randomStory = [
-      storyData[Math.floor(storyData.length * Math.random())],
-    ];
-    res.status(200).json({ stories: randomStory, total: storyData.length });
+    Story.find({ genre: query.genre })
+      .populate("comments")
+      .then((stories) => {
+        return resHandler(query, stories);
+      })
+      .catch((error) => {
+        //handle story retrieval error
+        console.log(error);
+        next(error);
+      });
   } else {
-    //respond with all stories
-    res.status(200).json({ stories: storyData, total: storyData.length });
+    Story.find().then((stories) => {
+      return resHandler(query, stories);
+    });
   }
 });
 
 router.get("/:id", (req, res, next) => {
   Story.findById(req.params.id)
+    .populate()
     .then((story) => {
       console.log("READ: ", story);
       res.status(200).json(story);
