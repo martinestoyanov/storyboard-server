@@ -206,17 +206,24 @@ router.post("/:id/delete", (req, res, next) => {
     });
 });
 
-router.post("/create", (req, res, next) => {
-  Comment.create(req.body)
-    .then((comment) => {
-      console.log("CREATE: ", comment);
-      res.status(200).json(comment);
-    })
-    .catch((error) => {
-      console.log(error);
-      res.status(404).json(error);
-      next(error);
-    });
-});
+router.post(
+  "/create",
+  isLoggedIn,
+  sentiment.analyzeSentiment,
+  (req, res, next) => {
+    console.log("You got to the create route!");
+    console.log(req.body);
+    Comment.create(req.body)
+      .then((comment) => {
+        console.log("CREATE: ", comment);
+        res.status(200).json(comment);
+      })
+      .catch((error) => {
+        console.log(error);
+        res.status(404).json(error);
+        next(error);
+      });
+  }
+);
 
 module.exports = router;
