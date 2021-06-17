@@ -24,11 +24,11 @@ router.get("/index", (req, res, next) => {
     }
   };
 
-  if (query.user) {
+  if (query.author) {
     console.log(query.user);
     if (query.storyName) {
       console.log(query.storyName);
-      const { user: userName, storyName } = query;
+      const { author: userName, storyName } = query;
       //find comments by user for given story
       const findUserForComment = User.findOne({ username: userName })
         .exec()
@@ -66,7 +66,8 @@ router.get("/index", (req, res, next) => {
             errorMessage: "Story does not exist",
             story: storyName,
           });
-        Comment.find({ user: user._id, story: story._id })
+        Comment.find({ author: user._id, story: story._id })
+          .populate()
           .then((comments) => {
             if (!comments)
               return res.status(404).json({
@@ -121,6 +122,7 @@ router.get("/index", (req, res, next) => {
             video: videoName,
           });
         Comment.find({ user: user._id, video: video._id })
+          .populate()
           .then((comments) => {
             if (!comments)
               return res.status(404).json({
@@ -138,9 +140,11 @@ router.get("/index", (req, res, next) => {
       });
     } else {
       //all comments by user
-      userPromise
+      const { author: userName } = query;
+      User.findOne({ username: userName })
+        .populate()
         .then((user) => {
-          Comment.find({ user: user._id })
+          Comment.find({ author: user._id })
             .then((comments) => {
               if (!user)
                 return res.status(404).json({
@@ -167,6 +171,7 @@ router.get("/index", (req, res, next) => {
 
 router.get("/:id", (req, res, next) => {
   Comment.findById(req.params.id)
+    .populate()
     .then((comment) => {
       console.log("READ: ", comment);
       if (!comment)
