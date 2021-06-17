@@ -7,6 +7,7 @@ const videoSchema = new Schema(
     url: {
       type: String,
       required: true,
+      unique: true,
     },
     title: String,
     genre: {
@@ -27,6 +28,7 @@ const videoSchema = new Schema(
       type: Number,
       default: 0,
     },
+    comments: [{ type: ObjectId, ref: "Comment" }],
   },
   {
     timestamps: true,
