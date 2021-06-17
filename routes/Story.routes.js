@@ -36,6 +36,13 @@ router.get("/index", (req, res, next) => {
     User.findOne({ username: userName })
       .populate("stories")
       .then((user) => {
+        if (!user)
+          return res
+            .status(404)
+            .json({
+              errorMessage: "User does not exist",
+              user: query.userName,
+            });
         if (query.searchTerm) {
           const storySearch = user.stories.filter((story) =>
             story.title.includes(query.searchTerm)

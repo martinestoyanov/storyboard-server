@@ -9,83 +9,93 @@ router.use("/", isLoggedIn);
 
 router.get("/index", (req, res, next) => {
   const query = req.query;
-  let userData = null;
+  const resHandler = (query, videoData) => {
+    if (query.start && query.end) {
+      //respond with stories in given range
+      let videos = videoData.slice(query.start, query.end + 1);
+      return res.status(200).json({ videos: videos, total: videoData.length });
+    } else if (query.random) {
+      //respond with single random story
+      const randomStory = [
+        videoData[Math.floor(videoData.length * Math.random())],
+      ];
+      return res
+        .status(200)
+        .json({ videos: randomStory, total: videoData.length });
+    } else {
+      //respond with all videos
+      return res
+        .status(200)
+        .json({ videos: videoData, total: videoData.length });
+    }
+  };
+
   if (query.userName) {
     User.findOne({ username: userName })
+      .populate("videos")
       .then((user) => {
-        userData = user;
+        if (!user)
+          return res.status(404).json({
+            errorMessage: "User does not exist",
+            user: query.userName,
+          });
+        if (query.searchTerm) {
+          const videoSearch = user.videos.filter((story) =>
+            story.title.includes(query.searchTerm)
+          );
+          if (query.genre) {
+            const videoSearch = user.videos.filter(
+              (story) =>
+                story.title.includes(query.searchTerm) &&
+                story.genre === query.genre
+            );
+            return resHandler(query, videoSearch);
+          } else return resHandler(query, videoSearch);
+        } else if (query.genre) {
+          const videoSearch = user.videos.filter(
+            (story) => story.genre === query.genre
+          );
+          return resHandler(query, videoSearch);
+        } else {
+          return resHandler(query, user.videos);
+        }
       })
       .catch((error) => {
         //handle user retrieval error
         console.log(error);
         next(error);
       });
-  }
-
-  let videoData = [];
-  if (query.searchTerm) {
-    if (userData) {
-      //search the named video for the given user
-      Video.find({ user: userData._id, title: /query.searchTerm/i })
-        .then((stories) => {
-          videoData = stories;
-        })
-        .catch((error) => {
-          //handle video retrieval error
-          console.log(error);
-          next(error);
-        });
-    } else {
-      //search all videos with given name
-      Video.find({ title: /query.searchTerm/i })
-        .then((videos) => {
-          videoData = videos;
-        })
-        .catch((error) => {
-          //handle video retrieval error
-          console.log(error);
-          next(error);
-        });
-    }
+  } else if (query.searchTerm) {
+    Video.find({ title: /query.searchTerm/i })
+      .populate("comments")
+      .then((videos) => {
+        if (query.genre) {
+          const videoSearch = videos.filter(
+            (story) => story.genre === query.genre
+          );
+          return resHandler(query, videoSearch);
+        } else return resHandler(query, videos);
+      })
+      .catch((error) => {
+        //handle story retrieval error
+        console.log(error);
+        next(error);
+      });
   } else if (query.genre) {
-    if (userData) {
-      //list videos for user in supplied genres
-      Video.find({ user: userData._id, genre: query.genre })
-        .then((videos) => {
-          videoData = videos;
-        })
-        .catch((error) => {
-          //handle video retrieval error
-          console.log(error);
-          next(error);
-        });
-    } else {
-      //list videos for supplied genres
-      Video.find({ genre: query.genre })
-        .then((videos) => {
-          videoData = videos;
-        })
-        .catch((error) => {
-          //handle video retrieval error
-          console.log(error);
-          next(error);
-        });
-    }
-  }
-
-  if (query.start && query.end) {
-    //respond with videos in given range
-    let videos = videoData.slice(query.start, query.end + 1);
-    res.status(200).json({ videos: videos, total: videoData.length });
-  } else if (query.random) {
-    //respond with single random video
-    const randomStory = [
-      videoData[Math.floor(videoData.length * Math.random())],
-    ];
-    res.status(200).json({ videos: randomStory, total: videoData.length });
+    Video.find({ genre: query.genre })
+      .populate("comments")
+      .then((videos) => {
+        return resHandler(query, videos);
+      })
+      .catch((error) => {
+        //handle story retrieval error
+        console.log(error);
+        next(error);
+      });
   } else {
-    //respond with all videos
-    res.status(200).json({ videos: videoData, total: videoData.length });
+    Video.find().then((videos) => {
+      return resHandler(query, videos);
+    });
   }
 });
 
