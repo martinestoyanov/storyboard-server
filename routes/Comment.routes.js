@@ -1,7 +1,5 @@
 const router = require("express").Router();
 const User = require("../models/User.model");
-const Video = require("../models/Video.model");
-const Story = require("../models/Session.model");
 const Comment = require("../models/Comment.model");
 const isLoggedIn = require("../middleware/isLoggedIn");
 const { query } = require("express");
