@@ -33,16 +33,15 @@ router.get("/index", (req, res, next) => {
   };
 
   if (query.userName) {
-    User.findOne({ username: userName })
-      .populate("stories")
+    User.findOne({ username: query.userName })
+      .populate({ path: "stories", populate: { path: "comments" } })
       .then((user) => {
+        console.log(user);
         if (!user)
-          return res
-            .status(404)
-            .json({
-              errorMessage: "User does not exist",
-              user: query.userName,
-            });
+          return res.status(404).json({
+            errorMessage: "User does not exist",
+            user: query.userName,
+          });
         if (query.searchTerm) {
           const storySearch = user.stories.filter((story) =>
             story.title.includes(query.searchTerm)
@@ -70,6 +69,7 @@ router.get("/index", (req, res, next) => {
         next(error);
       });
   } else if (query.searchTerm) {
+    //problem
     Story.find({ title: /query.searchTerm/i })
       .populate("comments")
       .then((stories) => {

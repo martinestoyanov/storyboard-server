@@ -31,7 +31,7 @@ router.get("/index", (req, res, next) => {
   };
 
   if (query.userName) {
-    User.findOne({ username: userName })
+    User.findOne({ username: query.userName })
       .populate("videos")
       .then((user) => {
         if (!user)

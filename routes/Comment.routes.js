@@ -2,8 +2,7 @@ const router = require("express").Router();
 const User = require("../models/User.model");
 const Comment = require("../models/Comment.model");
 const isLoggedIn = require("../middleware/isLoggedIn");
-const { query } = require("express");
-const { compareSync } = require("bcryptjs");
+const sentiment = require("../middleware/sentiment");
 
 router.use("/", isLoggedIn);
 
@@ -22,6 +21,7 @@ router.get("/index", (req, res, next) => {
     }
   };
 
+  console.log(query.userName);
   if (query.userName) {
     const userQuery = User.findOne({ username: query.userName });
     const userRetrievalError = (error) => {
