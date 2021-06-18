@@ -24,13 +24,71 @@ router.get("/index", (req, res, next) => {
     }
   };
 
-  //comments by author
-
-  //comments by video
-
-  //comments by story
-
+  if (query.userName) {
+    const userQuery = User.findOne({ username: query.userName });
+    const userRetrievalError = (error) => {
+      //handle user retrieval error
+      console.log(error);
+      next(error);
+    };
+    if (query.storyName) {
+      //comments on (story by user)
+      userQuery
+        .populate({ path: "stories", populate: { path: "comments" } })
+        .then((user) => {
+          if (!user)
+            return res.status(404).json({
+              errorMessage: "User does not exist",
+              user: query.userName,
+            });
+          const story = user.stories.filter(
+            (story) => story.title === query.storyName
+          )[0];
+          if (!story)
+            return res.status(404).json({
+              errorMessage: "Story does not exist for user",
+              story: query.storyName,
+            });
+          return resHandler(query, story.comments);
+        })
+        .catch(userRetrievalError);
+    } else if (query.videoName) {
+      //comments on (video by user)
+      userQuery
+        .populate({ path: "videos", populate: { path: "comments" } })
+        .then((user) => {
+          if (!user)
+            return res.status(404).json({
+              errorMessage: "User does not exist",
+              user: query.userName,
+            });
+          const video = user.videos.filter(
+            (video) => video.title === query.videoName
+          )[0];
+          if (!video)
+            return res.status(404).json({
+              errorMessage: "Video does not exist for user",
+              video: query.videoName,
+            });
+          return resHandler(query, video.comments);
+        })
+        .catch(userRetrievalError);
+    } else {
+      //comments on user
+      userQuery
+        .populate("comments")
+        .then((user) => {
+          if (!user)
+            return res.status(404).json({
+              errorMessage: "User does not exist",
+              user: query.userName,
+            });
+        })
+        .catch(userRetrievalError);
+    }
+  }
   //else there's a problem; handle it
+  return res.status(404).json({ errorMessage: "User must be provided" });
 });
 
 router.get("/:id", (req, res, next) => {
