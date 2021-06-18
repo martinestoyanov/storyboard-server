@@ -28,6 +28,7 @@ const videoSchema = new Schema(
       type: Number,
       default: 0,
     },
+    story: { type: ObjectId, ref: "Story", required: true },
     comments: [{ type: ObjectId, ref: "Comment" }],
   },
   {
