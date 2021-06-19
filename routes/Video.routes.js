@@ -158,7 +158,7 @@ router.post("/:id/delete", (req, res, next) => {
     });
 });
 
-router.post("/create", (req, res, next) => {
+router.post("/create", async (req, res, next) => {
   //need update dependencies
   const { user_id, story_id } = req.body;
   if (user_id && story_id) {
