@@ -11,16 +11,22 @@ function parsePopulate(paths) {
   return Array.isArray(paths) ? paths.join(" ") : paths;
 }
 
+function _404Error(res, next, error) {
+  console.log(error);
+  res.status(404).json(error);
+  next(error);
+}
+
 router.get("/index", (req, res, next) => {
   const query = req.query;
   const resHandler = (query, storyData) => {
-    if (query.start && query.end) {
+    if (query?.start && query?.end) {
       //respond with stories in given range
       let stories = storyData.slice(query.start, query.end + 1);
       return res
         .status(200)
         .json({ stories: stories, total: storyData.length });
-    } else if (query.random) {
+    } else if (query?.random) {
       //respond with single random story
       const randomStory = [
         storyData[Math.floor(storyData.length * Math.random())],
@@ -46,24 +52,21 @@ router.get("/index", (req, res, next) => {
         });
     userQuery
       .then((user) => {
-        console.log(user);
         if (!user)
           return res.status(404).json({
             errorMessage: "User does not exist",
             user: query.userName,
           });
         if (query.searchTerm) {
-          const storySearch = user.stories.filter((story) =>
-            story.title.includes(query.searchTerm)
+          let storySearch = user.stories.filter((story) =>
+            story.title.toLowerCase().includes(query.searchTerm.toLowerCase())
           );
           if (query.genre) {
-            const storySearch = user.stories.filter(
-              (story) =>
-                story.title.includes(query.searchTerm) &&
-                story.genre === query.genre
+            storySearch = storySearch.filter(
+              (story) => story.genre === query.genre
             );
-            return resHandler(query, storySearch);
-          } else return resHandler(query, storySearch);
+          }
+          return resHandler(query, storySearch);
         } else if (query.genre) {
           const storySearch = user.stories.filter(
             (story) => story.genre === query.genre
@@ -79,17 +82,19 @@ router.get("/index", (req, res, next) => {
         next(error);
       });
   } else if (query?.searchTerm) {
-    //problem
-    const storyQuery = Story.find({ title: /query.searchTerm/i });
+    const storyQuery = Story.find();
     if (query.with) storyQuery.populate(parsePopulate(query.with));
     storyQuery
       .then((stories) => {
-        if (query.genre) {
-          const storySearch = stories.filter(
+        let storySearch = stories.filter((story) =>
+          story.title.toLowerCase().includes(query.searchTerm.toLowerCase())
+        );
+        if (query.genre)
+          storySearch = storySearch.filter(
             (story) => story.genre === query.genre
           );
-          return resHandler(query, storySearch);
-        } else return resHandler(query, stories);
+
+        return resHandler(query, storySearch);
       })
       .catch((error) => {
         //handle story retrieval error
@@ -119,16 +124,14 @@ router.get("/index", (req, res, next) => {
 
 router.get("/:id", (req, res, next) => {
   const storyQuery = Story.findById(req.params.id);
-  if (res.query?.with) storyQuery.populate(parsePopulate(res.query.with));
+  if (req.query?.with) storyQuery.populate(parsePopulate(req.query.with));
   storyQuery
     .then((story) => {
       console.log("READ: ", story);
       res.status(200).json(story);
     })
     .catch((error) => {
-      console.log(error);
-      res.status(404).json(error);
-      next(error);
+      _404Error(res, next, error);
     });
 });
 
@@ -139,9 +142,7 @@ router.post("/:id/update", (req, res, next) => {
       res.status(200).json(story);
     })
     .catch((error) => {
-      console.log(error);
-      res.status(404).json(error);
-      next(error);
+      _404Error(res, next, error);
     });
 });
 
@@ -152,9 +153,7 @@ router.post("/:id/delete", (req, res, next) => {
       res.status(200).json(story);
     })
     .catch((error) => {
-      console.log(error);
-      res.status(404).json(error);
-      next(error);
+      _404Error(res, next, error);
     });
 });
 
@@ -165,9 +164,7 @@ router.post("/create", (req, res, next) => {
       res.status(200).json(story);
     })
     .catch((error) => {
-      console.log(error);
-      res.status(404).json(error);
-      next(error);
+      _404Error(res, next, error);
     });
 });
 

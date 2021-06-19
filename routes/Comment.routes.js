@@ -10,6 +10,12 @@ function parsePopulate(paths) {
   return Array.isArray(paths) ? paths.join(" ") : paths;
 }
 
+function _404Error(res, next, error) {
+  console.log(error);
+  res.status(404).json(error);
+  next(error);
+}
+
 router.get("/index", (req, res, next) => {
   const query = req.query;
   const resHandler = (query, commentData) => {
@@ -53,7 +59,8 @@ router.get("/index", (req, res, next) => {
               user: query.userName,
             });
           const story = user.stories.filter(
-            (story) => story.title === query.storyName
+            (story) =>
+              story.title.toLowerCase() === query.storyName.toLowerCase()
           )[0];
           if (!story)
             return res.status(404).json({
@@ -83,7 +90,8 @@ router.get("/index", (req, res, next) => {
               user: query.userName,
             });
           const video = user.videos.filter(
-            (video) => video.title === query.videoName
+            (video) =>
+              video.title.toLowerCase() === query.videoName.toLowerCase()
           )[0];
           if (!video)
             return res.status(404).json({
@@ -127,9 +135,7 @@ router.get("/:id", (req, res, next) => {
       return res.status(200).json(comment);
     })
     .catch((error) => {
-      console.log(error);
-      res.status(404).json(error);
-      next(error);
+      _404Error(res, next, error);
     });
 });
 
@@ -140,9 +146,7 @@ router.post("/:id/update", (req, res, next) => {
       res.status(200).json({ result: "Update success" });
     })
     .catch((error) => {
-      console.log(error);
-      res.status(404).json(error);
-      next(error);
+      _404Error(res, next, error);
     });
 });
 
@@ -153,9 +157,7 @@ router.post("/:id/delete", (req, res, next) => {
       res.status(200).json({ result: "Delete success" });
     })
     .catch((error) => {
-      console.log(error);
-      res.status(404).json(error);
-      next(error);
+      _404Error(res, next, error);
     });
 });
 
@@ -164,17 +166,13 @@ router.post(
   isLoggedIn,
   sentiment.analyzeSentiment,
   (req, res, next) => {
-    console.log("You got to the create route!");
-    console.log(req.body);
     Comment.create(req.body)
       .then((comment) => {
         console.log("CREATE: ", comment);
         res.status(200).json(comment);
       })
       .catch((error) => {
-        console.log(error);
-        res.status(404).json(error);
-        next(error);
+        _404Error(res, next, error);
       });
   }
 );
