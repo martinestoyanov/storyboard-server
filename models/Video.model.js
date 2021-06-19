@@ -7,6 +7,7 @@ const videoSchema = new Schema(
     url: {
       type: String,
       required: true,
+      unique: true,
     },
     title: String,
     genre: {
@@ -27,6 +28,8 @@ const videoSchema = new Schema(
       type: Number,
       default: 0,
     },
+    story: { type: ObjectId, ref: "Story", required: true },
+    comments: [{ type: ObjectId, ref: "Comment" }],
   },
   {
     timestamps: true,

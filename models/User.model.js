@@ -24,6 +24,7 @@ const userSchema = new Schema(
     },
     stories: [{ type: ObjectId, ref: "Story" }],
     videos: [{ type: ObjectId, ref: "Video" }],
+    comments: [{ type: ObjectId, ref: "Comment" }],
   },
   {
     timestamps: true,
