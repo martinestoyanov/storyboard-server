@@ -4,8 +4,13 @@ const Video = require("../models/Video.model");
 const User = require("../models/User.model");
 
 const isLoggedIn = require("../middleware/isLoggedIn");
+const { parse } = require("dotenv");
 
 router.use("/", isLoggedIn);
+
+function parsePopulate(paths) {
+  return Array.isArray(paths) ? paths.join(" ") : paths;
+}
 
 router.get("/index", (req, res, next) => {
   const query = req.query;
@@ -15,13 +20,13 @@ router.get("/index", (req, res, next) => {
       let videos = videoData.slice(query.start, query.end + 1);
       return res.status(200).json({ videos: videos, total: videoData.length });
     } else if (query.random) {
-      //respond with single random story
-      const randomStory = [
+      //respond with single random video
+      const randomVideo = [
         videoData[Math.floor(videoData.length * Math.random())],
       ];
       return res
         .status(200)
-        .json({ videos: randomStory, total: videoData.length });
+        .json({ videos: randomVideo, total: videoData.length });
     } else {
       //respond with all videos
       return res
@@ -30,9 +35,15 @@ router.get("/index", (req, res, next) => {
     }
   };
 
-  if (query.userName) {
-    User.findOne({ username: query.userName })
-      .populate("videos")
+  if (query?.userName) {
+    const userQuery = User.findOne({ username: query.userName });
+    query.with
+      ? userQuery.populate("videos")
+      : userQuery.populate({
+          path: "videos",
+          populate: { path: parsePopulate(query.with) },
+        });
+    userQuery
       .then((user) => {
         if (!user)
           return res.status(404).json({
@@ -40,20 +51,20 @@ router.get("/index", (req, res, next) => {
             user: query.userName,
           });
         if (query.searchTerm) {
-          const videoSearch = user.videos.filter((story) =>
-            story.title.includes(query.searchTerm)
+          const videoSearch = user.videos.filter((video) =>
+            video.title.includes(query.searchTerm)
           );
           if (query.genre) {
             const videoSearch = user.videos.filter(
-              (story) =>
-                story.title.includes(query.searchTerm) &&
-                story.genre === query.genre
+              (video) =>
+                video.title.includes(query.searchTerm) &&
+                video.genre === query.genre
             );
             return resHandler(query, videoSearch);
           } else return resHandler(query, videoSearch);
         } else if (query.genre) {
           const videoSearch = user.videos.filter(
-            (story) => story.genre === query.genre
+            (video) => video.genre === query.genre
           );
           return resHandler(query, videoSearch);
         } else {
@@ -65,42 +76,49 @@ router.get("/index", (req, res, next) => {
         console.log(error);
         next(error);
       });
-  } else if (query.searchTerm) {
-    Video.find({ title: /query.searchTerm/i })
-      .populate("comments")
+  } else if (query?.searchTerm) {
+    //fix
+    const videoQuery = Video.find({ title: /query.searchTerm/i });
+    if (query.with) videoQuery.populate(parsePopulate(query.with));
+    videoQuery
       .then((videos) => {
         if (query.genre) {
           const videoSearch = videos.filter(
-            (story) => story.genre === query.genre
+            (video) => video.genre === query.genre
           );
           return resHandler(query, videoSearch);
         } else return resHandler(query, videos);
       })
       .catch((error) => {
-        //handle story retrieval error
+        //handle video retrieval error
         console.log(error);
         next(error);
       });
-  } else if (query.genre) {
-    Video.find({ genre: query.genre })
-      .populate("comments")
+  } else if (query?.genre) {
+    const videoQuery = Video.find({ genre: query.genre });
+    if (query.with) videoQuery.populate(parsePopulate(query.with));
+    videoQuery
       .then((videos) => {
         return resHandler(query, videos);
       })
       .catch((error) => {
-        //handle story retrieval error
+        //handle video retrieval error
         console.log(error);
         next(error);
       });
   } else {
-    Video.find().then((videos) => {
+    const videoQuery = Video.find();
+    if (query?.with) videoQuery.populate(parsePopulate(query.with));
+    videoQuery.then((videos) => {
       return resHandler(query, videos);
     });
   }
 });
 
 router.get("/:id", (req, res, next) => {
-  Video.findById(req.params.id)
+  const videoQuery = Video.findById(req.params.id);
+  if (req.query?.with) videoQuery.populate(parsePopulate(res.query.with));
+  videoQuery
     .then((video) => {
       console.log("READ: ", video);
       res.status(200).json(video);

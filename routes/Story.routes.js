@@ -7,6 +7,10 @@ const isLoggedIn = require("../middleware/isLoggedIn");
 
 router.use("/", isLoggedIn);
 
+function parsePopulate(paths) {
+  return Array.isArray(paths) ? paths.join(" ") : paths;
+}
+
 router.get("/index", (req, res, next) => {
   const query = req.query;
   const resHandler = (query, storyData) => {
@@ -32,9 +36,15 @@ router.get("/index", (req, res, next) => {
     }
   };
 
-  if (query.userName) {
-    User.findOne({ username: query.userName })
-      .populate({ path: "stories", populate: { path: "comments" } })
+  if (query?.userName) {
+    const userQuery = User.findOne({ username: query.userName });
+    query.with
+      ? userQuery.populate("stories")
+      : userQuery.populate({
+          path: "stories",
+          populate: { path: parsePopulate(query.with) },
+        });
+    userQuery
       .then((user) => {
         console.log(user);
         if (!user)
@@ -68,10 +78,11 @@ router.get("/index", (req, res, next) => {
         console.log(error);
         next(error);
       });
-  } else if (query.searchTerm) {
+  } else if (query?.searchTerm) {
     //problem
-    Story.find({ title: /query.searchTerm/i })
-      .populate("comments")
+    const storyQuery = Story.find({ title: /query.searchTerm/i });
+    if (query.with) storyQuery.populate(parsePopulate(query.with));
+    storyQuery
       .then((stories) => {
         if (query.genre) {
           const storySearch = stories.filter(
@@ -85,9 +96,10 @@ router.get("/index", (req, res, next) => {
         console.log(error);
         next(error);
       });
-  } else if (query.genre) {
-    Story.find({ genre: query.genre })
-      .populate("comments")
+  } else if (query?.genre) {
+    const storyQuery = Story.find({ genre: query.genre });
+    if (query.with) storyQuery.populate(parsePopulate(query.with));
+    storyQuery
       .then((stories) => {
         return resHandler(query, stories);
       })
@@ -97,15 +109,18 @@ router.get("/index", (req, res, next) => {
         next(error);
       });
   } else {
-    Story.find().then((stories) => {
+    const storyQuery = Story.find();
+    if (query?.with) storyQuery.populate(parsePopulate(query.with));
+    storyQuery.then((stories) => {
       return resHandler(query, stories);
     });
   }
 });
 
 router.get("/:id", (req, res, next) => {
-  Story.findById(req.params.id)
-    .populate()
+  const storyQuery = Story.findById(req.params.id);
+  if (res.query?.with) storyQuery.populate(parsePopulate(res.query.with));
+  storyQuery
     .then((story) => {
       console.log("READ: ", story);
       res.status(200).json(story);

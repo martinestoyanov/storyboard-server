@@ -6,6 +6,10 @@ const sentiment = require("../middleware/sentiment");
 
 router.use("/", isLoggedIn);
 
+function parsePopulate(paths) {
+  return Array.isArray(paths) ? paths.join(" ") : paths;
+}
+
 router.get("/index", (req, res, next) => {
   const query = req.query;
   const resHandler = (query, commentData) => {
@@ -22,7 +26,7 @@ router.get("/index", (req, res, next) => {
   };
 
   console.log(query.userName);
-  if (query.userName) {
+  if (query?.userName) {
     const userQuery = User.findOne({ username: query.userName });
     const userRetrievalError = (error) => {
       //handle user retrieval error
@@ -31,8 +35,17 @@ router.get("/index", (req, res, next) => {
     };
     if (query.storyName) {
       //comments on (story by user)
+      if (query.with)
+        userQuery.populate({
+          path: "stories",
+          populate: {
+            path: "comments",
+            populate: { path: parsePopulate(query.with) },
+          },
+        });
+      else
+        userQuery.populate({ path: "stories", populate: { path: "comments" } });
       userQuery
-        .populate({ path: "stories", populate: { path: "comments" } })
         .then((user) => {
           if (!user)
             return res.status(404).json({
@@ -52,8 +65,17 @@ router.get("/index", (req, res, next) => {
         .catch(userRetrievalError);
     } else if (query.videoName) {
       //comments on (video by user)
+      if (query.with)
+        userQuery.populate({
+          path: "videos",
+          populate: {
+            path: "comments",
+            populate: { path: parsePopulate(query.with) },
+          },
+        });
+      else
+        userQuery.populate({ path: "videos", populate: { path: "comments" } });
       userQuery
-        .populate({ path: "videos", populate: { path: "comments" } })
         .then((user) => {
           if (!user)
             return res.status(404).json({
@@ -73,8 +95,13 @@ router.get("/index", (req, res, next) => {
         .catch(userRetrievalError);
     } else {
       //comments on user
+      if (query.with)
+        userQuery.populate({
+          path: "comments",
+          populate: { path: parsePopulate(query.with) },
+        });
+      else userQuery.populate("comments");
       userQuery
-        .populate("comments")
         .then((user) => {
           if (!user)
             return res.status(404).json({
@@ -90,8 +117,9 @@ router.get("/index", (req, res, next) => {
 });
 
 router.get("/:id", (req, res, next) => {
-  Comment.findById(req.params.id)
-    .populate()
+  const commentQuery = Comment.findById(req.params.id);
+  if (req.query?.with) comentQuery.populate(parsePopulate(req.query.with));
+  commentQuery
     .then((comment) => {
       console.log("READ: ", comment);
       if (!comment)
