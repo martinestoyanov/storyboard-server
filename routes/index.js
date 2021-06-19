@@ -11,7 +11,7 @@ router.get("/", (req, res, next) => {
 });
 
 router.use("/auth", authRoutes);
-router.user("/user", userRoutes);
+router.use("/user", userRoutes);
 router.use("/comment", commentRoutes);
 router.use("/story", storyRoutes);
 router.use("/video", videoRoutes);

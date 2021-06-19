@@ -4,7 +4,7 @@ const User = require("../models/User.model");
 
 const isLoggedIn = require("../middleware/isLoggedIn");
 
-router.user("/", isLoggedIn);
+router.use("/", isLoggedIn);
 
 function parsePopulate(paths) {
   return Array.isArray(paths) ? paths.join(" ") : paths;
