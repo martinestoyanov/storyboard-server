@@ -157,15 +157,31 @@ router.post("/:id/delete", (req, res, next) => {
     });
 });
 
-router.post("/create", (req, res, next) => {
-  Story.create(req.body)
-    .then((story) => {
-      console.log("CREATE: ", story);
-      res.status(200).json(story);
-    })
-    .catch((error) => {
-      _404Error(res, next, error);
-    });
+router.post("/create", async (req, res, next) => {
+  //need update dependencies
+  const { user_id } = req.body;
+  if (user_id) {
+    const creator = await User.findById(user_id).exec();
+    if (creator) {
+      const story = new Video(req.body);
+      creator.stories.push(story._id);
+      const creatorSave = creator.save();
+      const storySave = story.save();
+      Promise.all([creatorSave, storySave])
+        .then((data) => {
+          return res.status(100).json(data);
+        })
+        .catch((error) => {
+          return res
+            .status(500)
+            .json({ errorMessage: "Failed to save new story", error });
+        });
+    } else if (!creator)
+      return res.status(404).json({
+        errorMessage: "creator of story has invalid id",
+        creator: user_id,
+      });
+  } else _404Error(res, next, error);
 });
 
 module.exports = router;

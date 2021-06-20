@@ -191,15 +191,6 @@ router.post("/create", async (req, res, next) => {
         story: story_id,
       });
   } else _404Error(res, next, error);
-
-  Video.create(req.body)
-    .then((video) => {
-      console.log("CREATE: ", video);
-      res.status(200).json(video);
-    })
-    .catch((error) => {
-      _404Error(res, next, error);
-    });
 });
 
 module.exports = router;
