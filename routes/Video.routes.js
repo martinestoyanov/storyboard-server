@@ -135,7 +135,6 @@ router.get("/:id", (req, res, next) => {
 });
 
 router.post("/:id/update", (req, res, next) => {
-  //need update dependencies
   Video.findByIdAndUpdate(req.params.id, req.body)
     .then((video) => {
       console.log("UPDATE: ", video);
@@ -146,23 +145,46 @@ router.post("/:id/update", (req, res, next) => {
     });
 });
 
-router.post("/:id/delete", (req, res, next) => {
-  //need update dependencies
-  Video.findByIdAndDelete(req.params.id)
-    .then((video) => {
-      console.log("DELETE: ", video);
-      res.status(200).json(video);
-    })
-    .catch((error) => {
-      _404Error(res, next, error);
+router.post("/:id/delete", async (req, res, next) => {
+  const video_id = req.params.id;
+  const video = await Video.findById(video_id).exec();
+  const creator = await User.findById(video.user).exec();
+  const story = await Story.findById(video.story).exec();
+  if (creator && story) {
+    creator.videos.splice(creator.videos.indexOf(video_id), 1);
+    story.video_contributions.splice(
+      story.video_contributions.indexOf(video_id)
+    );
+    const creatorSave = creator.save();
+    const storySave = story.save();
+    const videoDeletion = Video.findByIdAndDelete(video_id, story_id).exec();
+    Promise.all([creatorSave, storySave, videoDeletion])
+      .then((data) => {
+        return res.status(200).json(data);
+      })
+      .catch((error) => {
+        return res.status(500).json({
+          errorMessage: "Failed to delete video",
+          video: video_id,
+          error: error,
+        });
+      });
+  } else if (!creator)
+    return res.status(404).json({
+      errorMessage: "creator for video has invalid id",
+      creator: creator_id,
+    });
+  else if (!story)
+    return res.status(404).json({
+      errorMessage: "story for video has invalid id",
+      story: story_id,
     });
 });
 
 router.post("/create", async (req, res, next) => {
-  //need update dependencies
-  const { user_id, story_id } = req.body;
-  if (user_id && story_id) {
-    const creator = await User.findById(user_id).exec();
+  const { creator_id, story_id } = req.body;
+  if (creator_id && story_id) {
+    const creator = await User.findById(creator_id).exec();
     const story = await Story.findById(story_id).exec();
     if (creator && story) {
       const video = new Video(req.body);
@@ -173,12 +195,12 @@ router.post("/create", async (req, res, next) => {
       const videoSave = video.save();
       Promise.all([creatorSave, storySave, videoSave])
         .then((data) => {
-          return res.status(100).json(data);
+          return res.status(200).json(data);
         })
         .catch((error) => {
           return res
             .status(500)
-            .json({ errorMessage: "Failed to save new video", error });
+            .json({ errorMessage: "Failed to save new video", error: error });
         });
     } else if (!creator)
       return res.status(404).json({

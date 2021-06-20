@@ -146,40 +146,54 @@ router.post("/:id/update", (req, res, next) => {
     });
 });
 
-router.post("/:id/delete", (req, res, next) => {
-  Story.findByIdAndDelete(req.params.id)
-    .then((story) => {
-      console.log("DELETE: ", story);
-      res.status(200).json(story);
-    })
-    .catch((error) => {
-      _404Error(res, next, error);
+router.post("/:id/delete", async (req, res, next) => {
+  const story_id = req.params.id;
+  const story = await Story.findById(story_id).exec();
+  const author = await User.findById(story?.user).exec();
+  if (author) {
+    author.stories.splice(author.stories.indexOf(author_id), 1);
+    const authorSave = author.save();
+    const storyDeletion = Story.findByIdAndDelete(story_id).exec();
+    Promise.all([authorSave, storyDeletion])
+      .then((data) => {
+        return res.status(200).json(data);
+      })
+      .catch((error) => {
+        return res.status(500).json({
+          errorMessage: "Failed to delete story",
+          story: story_id,
+          error: error,
+        });
+      });
+  } else if (!author)
+    return res.status(404).json({
+      errorMessage: "author of story has invalid id",
+      author: author_id,
     });
 });
 
 router.post("/create", async (req, res, next) => {
-  //need update dependencies
-  const { user_id } = req.body;
-  if (user_id) {
-    const creator = await User.findById(user_id).exec();
-    if (creator) {
+  const { author_id } = req.body;
+  if (author_id) {
+    const author = await User.findById(user_id).exec();
+    if (author) {
       const story = new Video(req.body);
-      creator.stories.push(story._id);
-      const creatorSave = creator.save();
+      author.stories.push(story._id);
+      const authorSave = author.save();
       const storySave = story.save();
-      Promise.all([creatorSave, storySave])
+      Promise.all([authorSave, storySave])
         .then((data) => {
-          return res.status(100).json(data);
+          return res.status(200).json(data);
         })
         .catch((error) => {
           return res
             .status(500)
-            .json({ errorMessage: "Failed to save new story", error });
+            .json({ errorMessage: "Failed to save new story", error: error });
         });
-    } else if (!creator)
+    } else if (!author)
       return res.status(404).json({
         errorMessage: "author of story has invalid id",
-        author: user_id,
+        author: author_id,
       });
   } else _404Error(res, next, error);
 });
