@@ -30,7 +30,15 @@ router.get("/index", (req, res, next) => {
       return res.status(200).json({ users: userData, total: userData.length });
     }
   };
-  return res.status(404).json({ errorMessage: "route under construction" });
+  const userQuery = User.find();
+  if (query?.with) userQuery.populate(parsePopulate(query.with));
+  userQuery
+    .then((users) => resHandler(query, users))
+    .catch((error) => {
+      console.log(error);
+      res.status(404).json(error);
+      next(error);
+    });
 });
 
 router.get("/:id", (req, res, next) => {
