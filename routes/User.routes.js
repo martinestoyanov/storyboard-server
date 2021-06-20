@@ -30,6 +30,7 @@ router.get("/index", (req, res, next) => {
       return res.status(200).json({ users: userData, total: userData.length });
     }
   };
+  return res.status(404).json({ errorMessage: "route under construction" });
 });
 
 router.get("/:id", (req, res, next) => {

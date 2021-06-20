@@ -164,16 +164,79 @@ router.post("/:id/delete", (req, res, next) => {
 router.post(
   "/create",
   isLoggedIn,
-  sentiment.analyzeSentiment,
-  (req, res, next) => {
-    Comment.create(req.body)
-      .then((comment) => {
-        console.log("CREATE: ", comment);
-        res.status(200).json(comment);
-      })
-      .catch((error) => {
-        _404Error(res, next, error);
-      });
+  sentiment.analyzeSentiment, //inserts sentiment into req.body
+  async (req, res, next) => {
+    const { story_id, video_id, user_id } = req.body;
+    if (story_id) {
+      //create a comment on a story
+      const story = await Story.findById(story_id).exec();
+      if (story) {
+        const comment = new Comment(req.body);
+        story.comments.push(comment._id);
+        const storySave = story.save();
+        const commentSave = comment.save();
+        Promise.all([storySave, commentSave])
+          .then((data) => {
+            return res.status(100).json(data);
+          })
+          .catch((error) => {
+            return res.status(500).json({
+              errorMessage: "Failed to save new comment",
+              error: error,
+            });
+          });
+      } else if (!story)
+        return res.status(404).json({
+          errorMessage: "story for comment has invalid id",
+          story: story_id,
+        });
+    } else if (video_id) {
+      //create a comment on a video
+      const video = await Video.findById(video_id).exec();
+      if (video) {
+        const comment = new Comment(req.body);
+        video.comments.push(comment._id);
+        const videoSave = video.save();
+        const commentSave = comment.save();
+        Promise.all([videoSave, commentSave])
+          .then((data) => {
+            return res.status(100).json(data);
+          })
+          .catch((error) => {
+            return res.status(500).json({
+              errorMessage: "Failed to save new comment",
+              error: error,
+            });
+          });
+      } else if (!video)
+        return res.status(404).json({
+          errorMessage: "video for comment has invalid id",
+          video: video_id,
+        });
+    } else if (user_id) {
+      //create a comment on a user
+      const user = await User.findById(user_id).exec();
+      if (user) {
+        const comment = new Comment(req.body);
+        user.comments.push(comment._id);
+        const userSave = user.save();
+        const commentSave = comment.save();
+        Promise.all([userSave, commentSave])
+          .then((data) => {
+            return res.status(100).json(data);
+          })
+          .catch((error) => {
+            return res.status(500).json({
+              errorMessage: "Failed to save new comment",
+              error: error,
+            });
+          });
+      } else if (!user)
+        return res.status(404).json({
+          errorMessage: "user for comment has invalid id",
+          user: user_id,
+        });
+    } else _404Error(res, next, error);
   }
 );
 

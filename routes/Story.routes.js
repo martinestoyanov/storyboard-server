@@ -178,8 +178,8 @@ router.post("/create", async (req, res, next) => {
         });
     } else if (!creator)
       return res.status(404).json({
-        errorMessage: "creator of story has invalid id",
-        creator: user_id,
+        errorMessage: "author of story has invalid id",
+        author: user_id,
       });
   } else _404Error(res, next, error);
 });

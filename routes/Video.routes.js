@@ -185,7 +185,7 @@ router.post("/create", async (req, res, next) => {
         errorMessage: "creator of video has invalid id",
         creator: user_id,
       });
-    else
+    else if (!story)
       return res.status(404).json({
         errorMessage: "story for video has invalid id",
         story: story_id,
