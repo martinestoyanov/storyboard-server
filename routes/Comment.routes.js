@@ -3,6 +3,7 @@ const User = require("../models/User.model");
 const Comment = require("../models/Comment.model");
 const isLoggedIn = require("../middleware/isLoggedIn");
 const sentiment = require("../middleware/sentiment");
+const Story = require("../models/Story.model");
 
 router.use("/", isLoggedIn);
 
@@ -131,7 +132,10 @@ router.get("/:id", (req, res, next) => {
     .then((comment) => {
       console.log("READ: ", comment);
       if (!comment)
-        return res.status(404).json({ errorMessage: "Comment does not exist" });
+        return res.status(404).json({
+          errorMessage: "Comment does not exist",
+          comment: req.params.id,
+        });
       return res.status(200).json(comment);
     })
     .catch((error) => {
@@ -139,41 +143,456 @@ router.get("/:id", (req, res, next) => {
     });
 });
 
-router.post("/:id/update", (req, res, next) => {
-  Comment.findByIdAndUpdate(req.params.id, req.body)
-    .then((comment) => {
-      console.log("UPDATE: ", comment);
-      res.status(200).json({ result: "Update success" });
-    })
-    .catch((error) => {
-      _404Error(res, next, error);
-    });
+router.post("/:id/update", async (req, res, next) => {
+  const comment_id = req.params.id;
+  const { story: story_id, video: video_id, user: user_id } = req.body;
+
+  const comment = await Comment.findById(comment_id).exec();
+  if (comment) {
+    if (comment.story && !story_id) {
+      //reassign story comment
+      if (video_id) {
+        //to video comment
+        const oldStory = await Story.findById(comment.story).exec();
+        const newVideo = await Video.findById(video_id).exec();
+        if (oldStory && newVideo) {
+          oldStory.comments.splice(oldStory.comments.indexOf(comment_id), 1);
+          newVideo.comments.push(comment_id);
+          const oldStorySave = oldStory.save();
+          const newVideoSave = newVideo.save();
+          const commentUpdate = Comment.findByIdAndUpdate(comment_id, req.body);
+          Promise.all([oldStorySave, newVideoSave, commentUpdate])
+            .then((data) => res.status(200).json(data))
+            .catch((error) =>
+              res.status(500).json({
+                errorMessage: "Failed to update comment",
+                comment: comment_id,
+                error: error,
+              })
+            );
+        } else if (!oldStory)
+          return res.status(404).json({
+            errorMessage: "original story for comment has invalid id",
+            story: story_id,
+          });
+        else if (!newVideo)
+          return res.status(404).json({
+            errorMessage: "new video for comment has invalid id",
+            video: video_id,
+          });
+      } else if (user_id) {
+        //to user comment
+        const oldStory = await Story.findById(comment.story).exec();
+        const newUser = await User.findById(user_id).exec();
+        if (oldStory && newUser) {
+          oldStory.comments.splice(oldStory.comments.indexOf(comment_id), 1);
+          newUser.comments.push(comment_id);
+          const oldStorySave = oldStory.save();
+          const newUserSave = newUser.save();
+          const commentUpdate = Comment.findByIdAndUpdate(comment_id, req.body);
+          Promise.all([oldStorySave, newUserSave, commentUpdate])
+            .then((data) => res.status(200).json(data))
+            .catch((error) =>
+              res.status(500).json({
+                errorMessage: "Failed to update comment",
+                comment: comment_id,
+                error: error,
+              })
+            );
+        } else if (!oldStory)
+          return res.status(404).json({
+            errorMessage: "original story for comment has invalid id",
+            story: story_id,
+          });
+        else if (!newUser)
+          return res.status(404).json({
+            errorMessage: "new user for comment has invalid id",
+            user: user_id,
+          });
+      }
+    } else if (comment.video && !video_id) {
+      //reassign video comment
+      if (story_id) {
+        //to story comment
+        const oldVideo = await Video.findById(comment.video).exec();
+        const newStory = await Story.findById(story_id).exec();
+        if (oldVideo && newStory) {
+          oldVideo.comments.splice(oldVideo.comments.indexOf(comment_id), 1);
+          newStory.comments.push(comment_id);
+          const oldVideoSave = oldVideo.save();
+          const newStorySave = newStory.save();
+          const commentUpdate = Comment.findByIdAndUpdate(comment_id, req.body);
+          Promise.all([oldVideoSave, newStorySave, commentUpdate])
+            .then((data) => res.status(200).json(data))
+            .catch((error) =>
+              res.status(500).json({
+                errorMessage: "Failed to update comment",
+                comment: comment_id,
+                error: error,
+              })
+            );
+        } else if (!oldVideo)
+          return res.status(404).json({
+            errorMessage: "original video for comment has invalid id",
+            video: comment.video,
+          });
+        else if (!newStory)
+          return res.status(404).json({
+            errorMessage: "new story for comment has invalid id",
+            story: story_id,
+          });
+      } else if (user_id) {
+        //to user comment
+        const oldVideo = await Video.findById(comment.video).exec();
+        const newUser = await User.findById(user_id).exec();
+        if (oldVideo && newUser) {
+          oldVideo.comments.splice(oldVideo.comments.indexOf(comment_id), 1);
+          newUser.comments.push(comment_id);
+          const oldVideoSave = oldVideo.save();
+          const newUserSave = newUser.save();
+          const commentUpdate = Comment.findByIdAndUpdate(comment_id, req.body);
+          Promise.all([oldVideoSave, newUserSave, commentUpdate])
+            .then((data) => res.status(200).json(data))
+            .catch((error) =>
+              res.status(500).json({
+                errorMessage: "Failed to update comment",
+                comment: comment_id,
+                error: error,
+              })
+            );
+        } else if (!oldVideo)
+          return res.status(404).json({
+            errorMessage: "original video for comment has invalid id",
+            video: comment.video,
+          });
+        else if (!newUser)
+          return res.status(404).json({
+            errorMessage: "new user for comment has invalid id",
+            user: user_id,
+          });
+      }
+    } else if (comment.user && !user_id) {
+      //reassign user comment
+      if (video_id) {
+        //to video comment
+        const oldUser = await User.findById(comment.user).exec();
+        const newVideo = await Video.findById(video_id).exec();
+        if (oldUser && newVideo) {
+          oldUser.comments.splice(oldUser.comments.indexOf(comment_id), 1);
+          newVideo.comments.push(comment_id);
+          const oldUserSave = oldUser.save();
+          const newVideoSave = newVideo.save();
+          const commentUpdate = Comment.findByIdAndUpdate(comment_id, req.body);
+          Promise.all([oldUserSave, newVideoSave, commentUpdate])
+            .then((data) => res.status(200).json(data))
+            .catch((error) =>
+              res.status(500).json({
+                errorMessage: "Failed to update comment",
+                comment: comment_id,
+                error: error,
+              })
+            );
+        } else if (!oldUser)
+          return res.status(404).json({
+            errorMessage: "original user for comment has invalid id",
+            user: comment.user,
+          });
+        else if (!newVideo)
+          return res.status(404).json({
+            errorMessage: "new video for comment has invalid id",
+            video: video_id,
+          });
+      } else if (story_id) {
+        //to story comment
+        const oldUser = await User.findById(comment.user).exec();
+        const newStory = await Story.findById(story_id).exec();
+        if (oldUser && newStory) {
+          oldUser.comments.splice(oldUser.comments.indexOf(comment_id), 1);
+          newStory.comments.push(comment_id);
+          const oldUserSave = oldUser.save();
+          const newStorySave = newStory.save();
+          const commentUpdate = Comment.findByIdAndUpdate(comment_id, req.body);
+          Promise.all([oldUserSave, newStorySave, commentUpdate])
+            .then((data) => res.status(200).json(data))
+            .catch((error) =>
+              res.status(500).json({
+                errorMessage: "Failed to update comment",
+                comment: comment_id,
+                error: error,
+              })
+            );
+        } else if (!oldUser)
+          return res.status(404).json({
+            errorMessage: "original user for comment has invalid id",
+            user: comment.user,
+          });
+        else if (!newStory)
+          return res.status(404).json({
+            errorMessage: "new story for comment has invalid id",
+            story: story_id,
+          });
+      }
+    } else if (story_id && comment.story !== story_id) {
+      //reassign comment to a different story
+      const oldStory = await Story.findById(comment.story).exec();
+      const newStory = await Story.findById(story_id).exec();
+      if (oldStory && newStory) {
+        oldStory.comments.splice(oldStory.comments.indexOf(comment_id), 1);
+        newStory.comments.push(comment_id);
+        const oldStorySave = oldStory.save();
+        const newStorySave = newStory.save();
+        const commentUpdate = Comment.findByIdAndUpdate(comment_id, req.body);
+        Promise.all([oldStorySave, newStorySave, commentUpdate])
+          .then((data) => res.status(200).json(data))
+          .catch((error) =>
+            res.status(500).json({
+              errorMessage: "Failed to update comment",
+              comment: comment_id,
+              error: error,
+            })
+          );
+      } else if (!oldStory)
+        return res.status(404).json({
+          errorMessage: "original story for comment has invalid id",
+          story: comment.user,
+        });
+      else if (!newStory)
+        return res.status(404).json({
+          errorMessage: "new story for comment has invalid id",
+          story: story_id,
+        });
+    } else if (video_id && comment.video !== video_id) {
+      //reassign comment to a different video
+      const oldVideo = await Video.findById(comment.video).exec();
+      const newVideo = await Video.findById(video_id).exec();
+      if (oldVideo && newVideo) {
+        oldVideo.comments.splice(oldVideo.comments.indexOf(comment_id), 1);
+        newVideo.comments.push(comment_id);
+        const oldVideoSave = oldVideo.save();
+        const newVideoSave = newVideo.save();
+        const commentUpdate = Comment.findByIdAndUpdate(comment_id, req.body);
+        Promise.all([oldVideoSave, newVideoSave, commentUpdate])
+          .then((data) => res.status(200).json(data))
+          .catch((error) =>
+            res.status(500).json({
+              errorMessage: "Failed to update comment",
+              comment: comment_id,
+              error: error,
+            })
+          );
+      } else if (!oldVideo)
+        return res.status(404).json({
+          errorMessage: "original video for comment has invalid id",
+          video: comment.video,
+        });
+      else if (!newVideo)
+        return res.status(404).json({
+          errorMessage: "new video for comment has invalid id",
+          video: video_id,
+        });
+    } else if (user_id && comment.user !== user_id) {
+      //reassign comment to a different user
+      const oldUser = await User.findById(comment.user).exec();
+      const newUser = await User.findById(user_id).exec();
+      if (oldUser && newUser) {
+        oldUser.comments.splice(oldUser.comments.indexOf(comment_id), 1);
+        newUser.comments.push(comment_id);
+        const oldUserSave = oldUser.save();
+        const newUserSave = newUser.save();
+        const commentUpdate = Comment.findByIdAndUpdate(comment_id, req.body);
+        Promise.all([oldUserSave, newUserSave, commentUpdate])
+          .then((data) => res.status(200).json(data))
+          .catch((error) =>
+            res.status(500).json({
+              errorMessage: "Failed to update comment",
+              comment: comment_id,
+              error: error,
+            })
+          );
+      } else if (!oldUser)
+        return res.status(404).json({
+          errorMessage: "original user for comment has invalid id",
+          user: comment.user,
+        });
+      else if (!newUser)
+        return res.status(404).json({
+          errorMessage: "new user for comment has invalid id",
+          user: user_id,
+        });
+    } else
+      Comment.findByIdAndUpdate(comment_id, req.body, (error, comment) => {
+        if (error)
+          return res.status(500).json({
+            errorMessage: "Failed to update comment",
+            comment: comment_id,
+            error: error,
+          });
+        else if (comment) return res.status(200).json(comment);
+      });
+  } else if (!comment)
+    return res
+      .status(404)
+      .json({ errorMessage: "Comment does not exist", comment: comment_id });
 });
 
-router.post("/:id/delete", (req, res, next) => {
-  Comment.findByIdAndDelete(req.params.id)
-    .then((comment) => {
-      console.log("DELETE: ", comment);
-      res.status(200).json({ result: "Delete success" });
-    })
-    .catch((error) => {
-      _404Error(res, next, error);
+router.post("/:id/delete", async (req, res, next) => {
+  const comment_id = req.params.id;
+  const comment = await Comment.findById(comment_id).exec();
+  const { story: story_id, video: video_id, user: user_id } = comment;
+  if (story_id) {
+    const story = await Story.findById(story_id).exec();
+    if (story) {
+      story.comments.splice(story.comments.indexOf(story_id));
+      const storySave = story.save();
+      const commentDeletion = Comment.findByIdAndDelete(comment_id).exec();
+      Promise.all([storySave, commentDeletion])
+        .then((data) => {
+          return res.status(200).json(data);
+        })
+        .catch((error) => {
+          return res.status(500).json({
+            errorMessage: "Failed to delete comment",
+            story: comment_id,
+            error: error,
+          });
+        });
+    } else if (!story)
+      return res.status(404).json({
+        errorMessage: "story for comment has invalid id",
+        story: story_id,
+      });
+  } else if (video_id) {
+    const video = await Video.findById(video_id).exec();
+    if (video) {
+      video.comments.splice(video.comments.indexOf(video_id));
+      const videoSave = video.save();
+      const commentDeletion = Comment.findByIdAndDelete(comment_id).exec();
+      Promise.all([videoSave, commentDeletion])
+        .then((data) => {
+          return res.status(200).json(data);
+        })
+        .catch((error) => {
+          return res.status(500).json({
+            errorMessage: "Failed to delete comment",
+            video: comment_id,
+            error: error,
+          });
+        });
+    } else if (!video)
+      return res.status(404).json({
+        errorMessage: "video for comment has invalid id",
+        video: video_id,
+      });
+  } else if (user_id) {
+    const user = await User.findById(user_id).exec();
+    if (user) {
+      user.comments.splice(user.comments.indexOf(user_id));
+      const userSave = user.save();
+      const commentDeletion = Comment.findByIdAndDelete(comment_id).exec();
+      Promise.all([userSave, commentDeletion])
+        .then((data) => {
+          return res.status(200).json(data);
+        })
+        .catch((error) => {
+          return res.status(500).json({
+            errorMessage: "Failed to delete comment",
+            user: comment_id,
+            error: error,
+          });
+        });
+    } else if (!user)
+      return res.status(404).json({
+        errorMessage: "user for comment has invalid id",
+        user: user_id,
+      });
+  } else
+    Comment.findByIdAndDelete(comment_id, (error, comment) => {
+      if (error)
+        return res.status(500).json({
+          errorMessage: "Failed to delete comment",
+          comment: comment_id,
+          error: error,
+        });
+      else if (comment) return res.status(200).json(comment);
     });
 });
 
 router.post(
   "/create",
   isLoggedIn,
-  sentiment.analyzeSentiment,
-  (req, res, next) => {
-    Comment.create(req.body)
-      .then((comment) => {
-        console.log("CREATE: ", comment);
-        res.status(200).json(comment);
-      })
-      .catch((error) => {
-        _404Error(res, next, error);
-      });
+  sentiment.analyzeSentiment, //inserts sentiment into req.body
+  async (req, res, next) => {
+    const { story_id, video_id, user_id } = req.body;
+    if (story_id) {
+      //create a comment on a story
+      const story = await Story.findById(story_id).exec();
+      if (story) {
+        const comment = new Comment(req.body);
+        story.comments.push(comment._id);
+        const storySave = story.save();
+        const commentSave = comment.save();
+        Promise.all([storySave, commentSave])
+          .then((data) => {
+            return res.status(200).json(data);
+          })
+          .catch((error) => {
+            return res.status(500).json({
+              errorMessage: "Failed to save new comment",
+              error: error,
+            });
+          });
+      } else if (!story)
+        return res.status(404).json({
+          errorMessage: "story for comment has invalid id",
+          story: story_id,
+        });
+    } else if (video_id) {
+      //create a comment on a video
+      const video = await Video.findById(video_id).exec();
+      if (video) {
+        const comment = new Comment(req.body);
+        video.comments.push(comment._id);
+        const videoSave = video.save();
+        const commentSave = comment.save();
+        Promise.all([videoSave, commentSave])
+          .then((data) => {
+            return res.status(200).json(data);
+          })
+          .catch((error) => {
+            return res.status(500).json({
+              errorMessage: "Failed to save new comment",
+              error: error,
+            });
+          });
+      } else if (!video)
+        return res.status(404).json({
+          errorMessage: "video for comment has invalid id",
+          video: video_id,
+        });
+    } else if (user_id) {
+      //create a comment on a user
+      const user = await User.findById(user_id).exec();
+      if (user) {
+        const comment = new Comment(req.body);
+        user.comments.push(comment._id);
+        const userSave = user.save();
+        const commentSave = comment.save();
+        Promise.all([userSave, commentSave])
+          .then((data) => {
+            return res.status(200).json(data);
+          })
+          .catch((error) => {
+            return res.status(500).json({
+              errorMessage: "Failed to save new comment",
+              error: error,
+            });
+          });
+      } else if (!user)
+        return res.status(404).json({
+          errorMessage: "user for comment has invalid id",
+          user: user_id,
+        });
+    } else _404Error(res, next, error);
   }
 );
 
