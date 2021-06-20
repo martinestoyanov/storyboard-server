@@ -134,15 +134,99 @@ router.get("/:id", (req, res, next) => {
     });
 });
 
-router.post("/:id/update", (req, res, next) => {
-  Video.findByIdAndUpdate(req.params.id, req.body)
-    .then((video) => {
-      console.log("UPDATE: ", video);
-      res.status(200).json(video);
-    })
-    .catch((error) => {
-      _404Error(res, next, error);
-    });
+router.post("/:id/update", async (req, res, next) => {
+  const video_id = req.params.id;
+  const { user: creator_id, story: story_id } = req.body;
+  const video = await Video.findById(video_id).exec();
+  if (
+    creator_id &&
+    video.user !== creator_id &&
+    story_id &&
+    video.story !== story_id
+  ) {
+    //reassign video to the new creator and a new story
+    const oldStory = await Story.findById(video.story).exec();
+    const newStory = await Story.findById(story_id).exec();
+    const oldCreator = await User.findById(video.user).exec();
+    const newCreator = await User.findById(creator_id).exec();
+    if (oldCreator && newCreator && oldStory && newStory) {
+      oldCreator.videos.splice(oldCreator.videos.indexOf(video_id), 1);
+      newCreator.videos.push(video_id);
+      oldStory.video_contributions.splice(
+        oldStory.video_contributions.indexOf(video_id)
+      );
+      newStory.video_contributions.push(video_id);
+      const oldCreatorSave = oldCreator.save();
+      const newCreatorSave = newCreator.save();
+      const oldStorySave = oldStory.save();
+      const newStorySave = newStory.save();
+      const videoUpdate = Video.findByIdAndUpdate(video_id, req.body).exec();
+      Promise.all([
+        oldCreatorSave,
+        newCreatorSave,
+        oldStorySave,
+        newStorySave,
+        videoUpdate,
+      ])
+        .then((data) => {
+          return res.status(200).json(data);
+        })
+        .catch((error) => {
+          return res.status(500).json({
+            errorMessage: "Failed to update video",
+            video: video_id,
+            error: error,
+          });
+        });
+    } else if (oldCreator && newCreator) {
+      //reassign video to a new creator
+      oldCreator.videos.splice(oldCreator.videos.indexOf(video_id), 1);
+      newCreator.videos.push(video_id);
+      const oldCreatorSave = oldCreator.save();
+      const newCreatorSave = newCreator.save();
+      const videoUpdate = Video.findByIdAndUpdate(video_id, req.body).exec();
+      Promise.all([oldCreatorSave, newCreatorSave, videoUpdate])
+        .then((data) => {
+          return res.status(200).json(data);
+        })
+        .catch((error) => {
+          return res.status(500).json({
+            errorMessage: "Failed to update video",
+            video: video_id,
+            error: error,
+          });
+        });
+    } else if (oldStory && newStory) {
+      //reassign video to a new story
+      oldStory.videos.splice(oldStory.videos.indexOf(video_id), 1);
+      newStory.videos.push(video_id);
+      const oldStorySave = oldStory.save();
+      const newStorySave = newStory.save();
+      const videoUpdate = Video.findByIdAndUpdate(video_id, req.body).exec();
+      Promise.all([oldStorySave, newStorySave, videoUpdate])
+        .then((data) => {
+          return res.status(200).json(data);
+        })
+        .catch((error) => {
+          return res.status(500).json({
+            errorMessage: "Failed to update video",
+            video: video_id,
+            error: error,
+          });
+        });
+    }
+  } else
+    Video.findByIdAndUpdate(video_id, req.body)
+      .then((video) => {
+        return res.status(200).json(video);
+      })
+      .catch((error) => {
+        return res.status(500).json({
+          errorMessage: "Failed to update video",
+          video: video_id,
+          error: error,
+        });
+      });
 });
 
 router.post("/:id/delete", async (req, res, next) => {
