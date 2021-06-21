@@ -296,7 +296,10 @@ router.post("/create", async (req, res, next) => {
         errorMessage: "story for video has invalid id",
         story: story_id,
       });
-  } else _404Error(res, next, error);
+  } else
+    res
+      .status(404)
+      .json({ errorMessage: "Must supply valid user id and story id" });
 });
 
 module.exports = router;
