@@ -4,10 +4,6 @@ const Video = require("../models/Video.model");
 const User = require("../models/User.model");
 const Story = require("../models/Story.model");
 
-const isLoggedIn = require("../middleware/isLoggedIn");
-
-router.use("/", isLoggedIn);
-
 function parsePopulate(paths) {
   return Array.isArray(paths) ? paths.join(" ") : paths;
 }
@@ -266,7 +262,7 @@ router.post("/:id/delete", async (req, res, next) => {
 });
 
 router.post("/create", async (req, res, next) => {
-  const { creator_id, story_id } = req.body;
+  const { user: creator_id, story: story_id } = req.body;
   if (creator_id && story_id) {
     const creator = await User.findById(creator_id).exec();
     const story = await Story.findById(story_id).exec();
