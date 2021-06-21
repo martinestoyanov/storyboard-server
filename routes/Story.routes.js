@@ -123,8 +123,12 @@ router.get("/:id", (req, res, next) => {
   if (req.query?.with) storyQuery.populate(parsePopulate(req.query.with));
   storyQuery
     .then((story) => {
+      if (!story)
+        return res
+          .status(404)
+          .json({ errorMessage: "Story not found", story: req.params.id });
       console.log("READ: ", story);
-      res.status(200).json(story);
+      return res.status(200).json(story);
     })
     .catch((error) => {
       _404Error(res, next, error);
