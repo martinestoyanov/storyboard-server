@@ -4,6 +4,10 @@ const Video = require("../models/Video.model");
 const User = require("../models/User.model");
 const Story = require("../models/Story.model");
 
+const hasBackendAuth = require("../middleware/hasBackendAuth");
+
+router.use("/", hasBackendAuth);
+
 function parsePopulate(paths) {
   return Array.isArray(paths) ? paths.join(" ") : paths;
 }

@@ -3,6 +3,10 @@ const router = require("express").Router();
 const Story = require("../models/Story.model");
 const User = require("../models/User.model");
 
+const hasBackendAuth = require("../middleware/hasBackendAuth");
+
+router.use("/", hasBackendAuth);
+
 function parsePopulate(paths) {
   return Array.isArray(paths) ? paths.join(" ") : paths;
 }
