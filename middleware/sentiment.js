@@ -9,7 +9,8 @@ const analyzeText = axios.create({
 });
 
 const analyzeSentiment = async (req, _, next) => {
-  console.log("Running semanitcs service");
+  if (!req.body.text) next();
+  console.log("Running semantics service");
   const text = { documents: [{ id: "1", text: req.body.text }] };
   // console.log(text);
   const data = await analyzeText
