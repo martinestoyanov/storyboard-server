@@ -4,10 +4,6 @@ const Video = require("../models/Video.model");
 const User = require("../models/User.model");
 const Story = require("../models/Story.model");
 
-const isLoggedIn = require("../middleware/isLoggedIn");
-
-router.use("/", isLoggedIn);
-
 function parsePopulate(paths) {
   return Array.isArray(paths) ? paths.join(" ") : paths;
 }
@@ -126,6 +122,10 @@ router.get("/:id", (req, res, next) => {
   if (req.query?.with) videoQuery.populate(parsePopulate(req.query.with));
   videoQuery
     .then((video) => {
+      if (!video)
+        return res
+          .status(404)
+          .json({ errorMessage: "Video not found", video: req.params.id });
       console.log("READ: ", video);
       res.status(200).json(video);
     })
@@ -178,8 +178,31 @@ router.post("/:id/update", async (req, res, next) => {
             error: error,
           });
         });
-    } else if (oldCreator && newCreator) {
-      //reassign video to a new creator
+    } else if (!oldCreator)
+      return res.status(404).json({
+        errorMessage: "original creator for video has invalid id",
+        creator: video.user,
+      });
+    else if (!newCreatory)
+      return res.status(404).json({
+        errorMessage: "new creator for video has invalid id",
+        story: creator_id,
+      });
+    else if (!oldStory)
+      return res.status(404).json({
+        errorMessage: "original story for video has invalid id",
+        story: video.story,
+      });
+    else if (!newStory)
+      return res.status(404).json({
+        errorMessage: "new story for video has invalid id",
+        story: story_id,
+      });
+  } else if (creator_id && video.user !== creator_id) {
+    //reassign video to a new creator
+    const oldCreator = await User.findById(video.user).exec();
+    const newCreator = await User.findById(creator_id).exec();
+    if (oldCreator && newCreator) {
       oldCreator.videos.splice(oldCreator.videos.indexOf(video_id), 1);
       newCreator.videos.push(video_id);
       const oldCreatorSave = oldCreator.save();
@@ -196,10 +219,26 @@ router.post("/:id/update", async (req, res, next) => {
             error: error,
           });
         });
-    } else if (oldStory && newStory) {
-      //reassign video to a new story
-      oldStory.videos.splice(oldStory.videos.indexOf(video_id), 1);
-      newStory.videos.push(video_id);
+    } else if (!oldCreator)
+      return res.status(404).json({
+        errorMessage: "original creator for video has invalid id",
+        creator: video.user,
+      });
+    else if (!newCreatory)
+      return res.status(404).json({
+        errorMessage: "new creator for video has invalid id",
+        story: creator_id,
+      });
+  } else if (story_id && video.story !== story_id) {
+    //reassign video to a new story
+    const oldStory = await Story.findById(video.story).exec();
+    const newStory = await Story.findById(story_id).exec();
+    if (oldStory && newStory) {
+      oldStory.video_contributions.splice(
+        oldStory.video_contributions.indexOf(video_id),
+        1
+      );
+      newStory.video_contributions.push(video_id);
       const oldStorySave = oldStory.save();
       const newStorySave = newStory.save();
       const videoUpdate = Video.findByIdAndUpdate(video_id, req.body).exec();
@@ -214,7 +253,16 @@ router.post("/:id/update", async (req, res, next) => {
             error: error,
           });
         });
-    }
+    } else if (!oldStory)
+      return res.status(404).json({
+        errorMessage: "original story for video has invalid id",
+        story: video.story,
+      });
+    else if (!newStory)
+      return res.status(404).json({
+        errorMessage: "new story for video has invalid id",
+        story: story_id,
+      });
   } else
     Video.findByIdAndUpdate(video_id, req.body)
       .then((video) => {
@@ -241,7 +289,7 @@ router.post("/:id/delete", async (req, res, next) => {
     );
     const creatorSave = creator.save();
     const storySave = story.save();
-    const videoDeletion = Video.findByIdAndDelete(video_id, story_id).exec();
+    const videoDeletion = Video.findByIdAndDelete(video_id).exec();
     Promise.all([creatorSave, storySave, videoDeletion])
       .then((data) => {
         return res.status(200).json(data);
@@ -266,7 +314,7 @@ router.post("/:id/delete", async (req, res, next) => {
 });
 
 router.post("/create", async (req, res, next) => {
-  const { creator_id, story_id } = req.body;
+  const { user: creator_id, story: story_id } = req.body;
   if (creator_id && story_id) {
     const creator = await User.findById(creator_id).exec();
     const story = await Story.findById(story_id).exec();
@@ -296,7 +344,10 @@ router.post("/create", async (req, res, next) => {
         errorMessage: "story for video has invalid id",
         story: story_id,
       });
-  } else _404Error(res, next, error);
+  } else
+    res
+      .status(404)
+      .json({ errorMessage: "Must supply valid user id and story id" });
 });
 
 module.exports = router;

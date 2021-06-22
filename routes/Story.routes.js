@@ -3,10 +3,6 @@ const router = require("express").Router();
 const Story = require("../models/Story.model");
 const User = require("../models/User.model");
 
-const isLoggedIn = require("../middleware/isLoggedIn");
-
-router.use("/", isLoggedIn);
-
 function parsePopulate(paths) {
   return Array.isArray(paths) ? paths.join(" ") : paths;
 }
@@ -127,8 +123,12 @@ router.get("/:id", (req, res, next) => {
   if (req.query?.with) storyQuery.populate(parsePopulate(req.query.with));
   storyQuery
     .then((story) => {
+      if (!story)
+        return res
+          .status(404)
+          .json({ errorMessage: "Story not found", story: req.params.id });
       console.log("READ: ", story);
-      res.status(200).json(story);
+      return res.status(200).json(story);
     })
     .catch((error) => {
       _404Error(res, next, error);
@@ -139,7 +139,7 @@ router.post("/:id/update", async (req, res, next) => {
   const story_id = req.params.id;
   const author_id = req.body.user;
   const story = await Story.findById(story_id).exec();
-  if (newAuthor && story._id !== newAuthor) {
+  if (author_id && !(story.user === author_id)) {
     //reassign story to the new author
     const oldAuthor = await User.findById(story.user).exec();
     const newAuthor = await User.findById(author_id).exec();
@@ -148,7 +148,8 @@ router.post("/:id/update", async (req, res, next) => {
       newAuthor.stories.push(story_id);
       const oldAuthorSave = oldAuthor.save();
       const newAuthorSave = newAuthor.save();
-      Promise.all([oldAuthorSave, newAuthorSave])
+      const storyUpdate = Story.findByIdAndUpdate(story_id, req.body).exec();
+      Promise.all([oldAuthorSave, newAuthorSave, storyUpdate])
         .then((data) => {
           return res.status(200).json(data);
         })
@@ -188,7 +189,7 @@ router.post("/:id/delete", async (req, res, next) => {
   const story = await Story.findById(story_id).exec();
   const author = await User.findById(story?.user).exec();
   if (author) {
-    author.stories.splice(author.stories.indexOf(author_id), 1);
+    author.stories.splice(author.stories.indexOf(story_id), 1);
     const authorSave = author.save();
     const storyDeletion = Story.findByIdAndDelete(story_id).exec();
     Promise.all([authorSave, storyDeletion])
@@ -205,16 +206,16 @@ router.post("/:id/delete", async (req, res, next) => {
   } else if (!author)
     return res.status(404).json({
       errorMessage: "author of story has invalid id",
-      author: author_id,
+      author: author._id,
     });
 });
 
 router.post("/create", async (req, res, next) => {
-  const { author_id } = req.body;
+  const { user: author_id } = req.body;
   if (author_id) {
-    const author = await User.findById(user_id).exec();
+    const author = await User.findById(author_id).exec();
     if (author) {
-      const story = new Video(req.body);
+      const story = new Story(req.body);
       author.stories.push(story._id);
       const authorSave = author.save();
       const storySave = story.save();
