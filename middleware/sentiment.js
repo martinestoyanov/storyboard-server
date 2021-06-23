@@ -10,10 +10,10 @@ const analyzeText = axios.create({
 
 const analyzeSentiment = async (req, _, next) => {
   console.log("Running semanitcs service");
-  const text = { documents: [{ id: "1", text: req.body.text }] };
+  const commentText = { documents: [{ id: "1", text: req.body.commentText }] };
   // console.log(text);
   const data = await analyzeText
-    .post(`/text/analytics/v3.1-preview.5/sentiment`, text)
+    .post(`/text/analytics/v3.1-preview.5/sentiment`, commentText)
     .then((result) => {
       req.body.sentiment = result.data;
       console.log("This is the data from the API :", req.body.sentiment.data);
