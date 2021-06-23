@@ -133,6 +133,7 @@ router.get("/:id", (req, res, next) => {
     });
 });
 
+
 router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
   const story_id = req.params.id;
   const author_id = req.body.user;
@@ -182,6 +183,7 @@ router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
       });
 });
 
+
 router.post("/:id/delete", hasBackendAuth, async (req, res, next) => {
   const story_id = req.params.id;
   const story = await Story.findById(story_id).exec();
@@ -208,17 +210,21 @@ router.post("/:id/delete", hasBackendAuth, async (req, res, next) => {
     });
 });
 
-router.post("/create", hasBackendAuth, async (req, res, next) => {
-  const { user: author_id } = req.body;
-  if (author_id) {
-    const author = await User.findById(author_id).exec();
+
+router.post("/create", hasBackendAuth ,async (req, res, next) => {
+  const { user } = req.body;
+  // console.log("Running create", req.body ,req.body.user);
+  if (user) {
+    // console.log("author_id passed properly")
+    const author = await User.findById(user).exec();
     if (author) {
       const story = new Story(req.body);
       author.stories.push(story._id);
       const authorSave = author.save();
       const storySave = story.save();
+      // console.log(storySave);
       Promise.all([authorSave, storySave])
-        .then((data) => {
+      .then((data) => {
           return res.status(200).json(data);
         })
         .catch((error) => {
