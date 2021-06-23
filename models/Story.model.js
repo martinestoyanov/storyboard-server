@@ -22,6 +22,10 @@ const storySchema = new Schema(
     },
     video_contributions: [{ type: ObjectId, ref: "Video" }],
     comments: [{ type: ObjectId, ref: "Comment" }],
+    upvotes: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
