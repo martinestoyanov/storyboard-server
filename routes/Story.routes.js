@@ -4,11 +4,6 @@ const Story = require("../models/Story.model");
 const User = require("../models/User.model");
 
 const hasBackendAuth = require("../middleware/hasBackendAuth");
-//Commented out line (router.use("/", hasBackendAuth);)below as it breaks finding stories by id only route. 
-// client side does not pass any auth information for this route.
-// May need to repeat individually in each route to allow for viewing without logging in
-// or force login.
-// router.use("/", hasBackendAuth);
 
 function parsePopulate(paths) {
   return Array.isArray(paths) ? paths.join(" ") : paths;
@@ -138,7 +133,8 @@ router.get("/:id", (req, res, next) => {
     });
 });
 
-router.post("/:id/update", hasBackendAuth ,async (req, res, next) => {
+
+router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
   const story_id = req.params.id;
   const author_id = req.body.user;
   const story = await Story.findById(story_id).exec();
@@ -187,7 +183,8 @@ router.post("/:id/update", hasBackendAuth ,async (req, res, next) => {
       });
 });
 
-router.post("/:id/delete", hasBackendAuth ,async (req, res, next) => {
+
+router.post("/:id/delete", hasBackendAuth, async (req, res, next) => {
   const story_id = req.params.id;
   const story = await Story.findById(story_id).exec();
   const author = await User.findById(story?.user).exec();
@@ -212,6 +209,7 @@ router.post("/:id/delete", hasBackendAuth ,async (req, res, next) => {
       author: author._id,
     });
 });
+
 
 router.post("/create", hasBackendAuth ,async (req, res, next) => {
   const { user } = req.body;

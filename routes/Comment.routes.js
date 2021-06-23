@@ -8,7 +8,6 @@ const Video = require("../models/Video.model");
 const sentiment = require("../middleware/sentiment");
 
 const hasBackendAuth = require("../middleware/hasBackendAuth");
-router.use("/", hasBackendAuth);
 
 function parsePopulate(paths) {
   return Array.isArray(paths) ? paths.join(" ") : paths;
@@ -144,6 +143,7 @@ router.get("/:id", (req, res, next) => {
 
 router.post(
   "/:id/update",
+  hasBackendAuth,
   sentiment.analyzeSentiment,
   async (req, res, next) => {
     const comment_id = req.params.id;
@@ -459,7 +459,7 @@ router.post(
   }
 );
 
-router.post("/:id/delete", async (req, res, next) => {
+router.post("/:id/delete", hasBackendAuth, async (req, res, next) => {
   const comment_id = req.params.id;
   const comment = await Comment.findById(comment_id).exec();
   const { story: story_id, video: video_id, user: user_id } = comment;
@@ -543,6 +543,7 @@ router.post("/:id/delete", async (req, res, next) => {
 
 router.post(
   "/create",
+  hasBackendAuth,
   sentiment.analyzeSentiment, //inserts sentiment into req.body
   async (req, res, next) => {
     const { story: story_id, video: video_id, user: user_id } = req.body;

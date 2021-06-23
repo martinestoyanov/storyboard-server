@@ -6,8 +6,6 @@ const Story = require("../models/Story.model");
 
 const hasBackendAuth = require("../middleware/hasBackendAuth");
 
-router.use("/", hasBackendAuth);
-
 function parsePopulate(paths) {
   return Array.isArray(paths) ? paths.join(" ") : paths;
 }
@@ -134,7 +132,7 @@ router.get("/:id", (req, res, next) => {
     });
 });
 
-router.post("/:id/update", async (req, res, next) => {
+router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
   const video_id = req.params.id;
   const { user: creator_id, story: story_id } = req.body;
   const video = await Video.findById(video_id).exec();
@@ -277,7 +275,7 @@ router.post("/:id/update", async (req, res, next) => {
       });
 });
 
-router.post("/:id/delete", async (req, res, next) => {
+router.post("/:id/delete", hasBackendAuth, async (req, res, next) => {
   const video_id = req.params.id;
   const video = await Video.findById(video_id).exec();
   const creator = await User.findById(video.user).exec();
@@ -313,7 +311,7 @@ router.post("/:id/delete", async (req, res, next) => {
     });
 });
 
-router.post("/create", async (req, res, next) => {
+router.post("/create", hasBackendAuth, async (req, res, next) => {
   const { user: creator_id, story: story_id } = req.body;
   if (creator_id && story_id) {
     const creator = await User.findById(creator_id).exec();

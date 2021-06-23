@@ -2,10 +2,6 @@ const router = require("express").Router();
 
 const User = require("../models/User.model");
 
-const isLoggedIn = require("../middleware/isLoggedIn");
-
-router.use("/", isLoggedIn);
-
 function parsePopulate(paths) {
   return Array.isArray(paths) ? paths.join(" ") : paths;
 }
