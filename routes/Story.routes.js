@@ -11,12 +11,6 @@ function parsePopulate(paths) {
   return Array.isArray(paths) ? paths.join(" ") : paths;
 }
 
-function _404Error(res, next, error) {
-  console.log(error);
-  res.status(404).json(error);
-  next(error);
-}
-
 router.get("/index", (req, res, next) => {
   const query = req.query;
   const resHandler = (query, storyData) => {
@@ -135,7 +129,9 @@ router.get("/:id", (req, res, next) => {
       return res.status(200).json(story);
     })
     .catch((error) => {
-      _404Error(res, next, error);
+      console.log(error);
+      res.status(404).json(error);
+      next(error);
     });
 });
 
@@ -234,10 +230,13 @@ router.post("/create", async (req, res, next) => {
         });
     } else if (!author)
       return res.status(404).json({
-        errorMessage: "author of story has invalid id",
+        errorMessage: "Author of story has invalid id",
         author: author_id,
       });
-  } else _404Error(res, next, error);
+  }
+  return res
+    .status(400)
+    .json({ errorMessage: "Story data is missing author id" });
 });
 
 module.exports = router;
