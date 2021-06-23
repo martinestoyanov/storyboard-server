@@ -5,8 +5,6 @@ const User = require("../models/User.model");
 
 const hasBackendAuth = require("../middleware/hasBackendAuth");
 
-router.use("/", hasBackendAuth);
-
 function parsePopulate(paths) {
   return Array.isArray(paths) ? paths.join(" ") : paths;
 }
@@ -135,7 +133,7 @@ router.get("/:id", (req, res, next) => {
     });
 });
 
-router.post("/:id/update", async (req, res, next) => {
+router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
   const story_id = req.params.id;
   const author_id = req.body.user;
   const story = await Story.findById(story_id).exec();
@@ -184,7 +182,7 @@ router.post("/:id/update", async (req, res, next) => {
       });
 });
 
-router.post("/:id/delete", async (req, res, next) => {
+router.post("/:id/delete", hasBackendAuth, async (req, res, next) => {
   const story_id = req.params.id;
   const story = await Story.findById(story_id).exec();
   const author = await User.findById(story?.user).exec();
@@ -210,7 +208,7 @@ router.post("/:id/delete", async (req, res, next) => {
     });
 });
 
-router.post("/create", async (req, res, next) => {
+router.post("/create", hasBackendAuth, async (req, res, next) => {
   const { user: author_id } = req.body;
   if (author_id) {
     const author = await User.findById(author_id).exec();
