@@ -23,9 +23,9 @@ const videoSchema = new Schema(
         "Thriller/Mystery",
       ],
     },
-    upvotes: { type: ObjectId, ref: "User" },
     story: { type: ObjectId, ref: "Story", required: true },
     comments: [{ type: ObjectId, ref: "Comment" }],
+    upvotes: { type: ObjectId, ref: "User" },
   },
   {
     timestamps: true,
