@@ -8,10 +8,7 @@ const commentSchema = new Schema(
     story: { type: ObjectId, ref: "Story" },
     video: { type: ObjectId, ref: "Video" },
     user: { type: ObjectId, ref: "User" },
-    upvotes: {
-      type: Number,
-      default: 0,
-    },
+    upvotes: { type: ObjectId, ref: "User" },
     sentiment: Object,
   },
   {
