@@ -147,11 +147,32 @@ router.post(
   sentiment.analyzeSentiment,
   async (req, res, next) => {
     const comment_id = req.params.id;
-    const { story: story_id, video: video_id, user: user_id } = req.body;
-
     const comment = await Comment.findById(comment_id).exec();
     if (comment) {
-      if (comment.story && !story_id) {
+      const {
+        story: story_id,
+        video: video_id,
+        user: user_id,
+        upvotes: upvoter_id,
+      } = req.body;
+      if (upvoter_id) {
+        // toggle a like for comment by the given user
+        if (comment.upvotes.includes(upvoter_id))
+          comment.upvotes.splice(comment.upvotes.indexOf(upvoter_id), 1);
+        else comment.upvotes.push(upvoter_id);
+        comment
+          .save()
+          .then((comment) => {
+            return res.status(200).json(comment);
+          })
+          .catch((error) => {
+            return res.status(500).json({
+              errorMessage: "Failed to update comment",
+              comment: comment_id,
+              error: error,
+            });
+          });
+      } else if (comment.story && !story_id) {
         //reassign story comment
         req.body.story = undefined;
         if (video_id) {
@@ -168,7 +189,13 @@ router.post(
               req.body
             );
             Promise.all([oldStorySave, newVideoSave, commentUpdate])
-              .then((data) => res.status(200).json(data))
+              .then((data) =>
+                res.status(200).json({
+                  originalStory: data[0],
+                  newVideo: data[1],
+                  comment: data[2],
+                })
+              )
               .catch((error) =>
                 res.status(500).json({
                   errorMessage: "Failed to update comment",
@@ -200,7 +227,13 @@ router.post(
               req.body
             );
             Promise.all([oldStorySave, newUserSave, commentUpdate])
-              .then((data) => res.status(200).json(data))
+              .then((data) =>
+                res.status(200).json({
+                  originalStory: data[0],
+                  newUser: data[1],
+                  comment: data[2],
+                })
+              )
               .catch((error) =>
                 res.status(500).json({
                   errorMessage: "Failed to update comment",
@@ -236,7 +269,13 @@ router.post(
               req.body
             );
             Promise.all([oldVideoSave, newStorySave, commentUpdate])
-              .then((data) => res.status(200).json(data))
+              .then((data) =>
+                res.status(200).json({
+                  originalVideo: data[0],
+                  newStory: data[1],
+                  comment: data[2],
+                })
+              )
               .catch((error) =>
                 res.status(500).json({
                   errorMessage: "Failed to update comment",
@@ -268,7 +307,13 @@ router.post(
               req.body
             );
             Promise.all([oldVideoSave, newUserSave, commentUpdate])
-              .then((data) => res.status(200).json(data))
+              .then((data) =>
+                res.status(200).json({
+                  originalVideo: data[0],
+                  newUser: data[1],
+                  comment: data[2],
+                })
+              )
               .catch((error) =>
                 res.status(500).json({
                   errorMessage: "Failed to update comment",
@@ -304,7 +349,13 @@ router.post(
               req.body
             );
             Promise.all([oldUserSave, newVideoSave, commentUpdate])
-              .then((data) => res.status(200).json(data))
+              .then((data) =>
+                res.status(200).json({
+                  originalUser: data[0],
+                  newVideo: data[1],
+                  comment: data[2],
+                })
+              )
               .catch((error) =>
                 res.status(500).json({
                   errorMessage: "Failed to update comment",
@@ -336,7 +387,13 @@ router.post(
               req.body
             );
             Promise.all([oldUserSave, newStorySave, commentUpdate])
-              .then((data) => res.status(200).json(data))
+              .then((data) =>
+                res.status(200).json({
+                  originalUser: data[0],
+                  newStory: data[1],
+                  comment: data[2],
+                })
+              )
               .catch((error) =>
                 res.status(500).json({
                   errorMessage: "Failed to update comment",
@@ -366,7 +423,13 @@ router.post(
           const newStorySave = newStory.save();
           const commentUpdate = Comment.findByIdAndUpdate(comment_id, req.body);
           Promise.all([oldStorySave, newStorySave, commentUpdate])
-            .then((data) => res.status(200).json(data))
+            .then((data) =>
+              res.status(200).json({
+                originalStory: data[0],
+                newStory: data[1],
+                comment: data[2],
+              })
+            )
             .catch((error) =>
               res.status(500).json({
                 errorMessage: "Failed to update comment",
@@ -395,7 +458,13 @@ router.post(
           const newVideoSave = newVideo.save();
           const commentUpdate = Comment.findByIdAndUpdate(comment_id, req.body);
           Promise.all([oldVideoSave, newVideoSave, commentUpdate])
-            .then((data) => res.status(200).json(data))
+            .then((data) =>
+              res.status(200).json({
+                originalVideo: data[0],
+                newVideo: data[1],
+                comment: data[2],
+              })
+            )
             .catch((error) =>
               res.status(500).json({
                 errorMessage: "Failed to update comment",
@@ -424,7 +493,13 @@ router.post(
           const newUserSave = newUser.save();
           const commentUpdate = Comment.findByIdAndUpdate(comment_id, req.body);
           Promise.all([oldUserSave, newUserSave, commentUpdate])
-            .then((data) => res.status(200).json(data))
+            .then((data) =>
+              res.status(200).json({
+                originalUser: data[0],
+                newUser: data[1],
+                comment: data[2],
+              })
+            )
             .catch((error) =>
               res.status(500).json({
                 errorMessage: "Failed to update comment",
@@ -455,90 +530,92 @@ router.post(
     } else if (!comment)
       return res
         .status(404)
-        .json({ errorMessage: "Comment does not exist", comment: comment_id });
+        .json({ errorMessage: "Comment not found", comment: comment_id });
   }
 );
 
 router.post("/:id/delete", hasBackendAuth, async (req, res, next) => {
   const comment_id = req.params.id;
   const comment = await Comment.findById(comment_id).exec();
-  const { story: story_id, video: video_id, user: user_id } = comment;
-  if (story_id) {
-    const story = await Story.findById(story_id).exec();
-    if (story) {
-      story.comments.splice(story.comments.indexOf(story_id));
-      const storySave = story.save();
-      const commentDeletion = Comment.findByIdAndDelete(comment_id).exec();
-      Promise.all([storySave, commentDeletion])
-        .then((data) => {
-          return res.status(200).json(data);
-        })
-        .catch((error) => {
-          return res.status(500).json({
-            errorMessage: "Failed to delete comment",
-            story: comment_id,
-            error: error,
+  if (comment) {
+    const { story: story_id, video: video_id, user: user_id } = comment;
+    if (story_id) {
+      const story = await Story.findById(story_id).exec();
+      if (story) {
+        story.comments.splice(story.comments.indexOf(story_id));
+        const storySave = story.save();
+        const commentDeletion = Comment.findByIdAndDelete(comment_id).exec();
+        Promise.all([storySave, commentDeletion])
+          .then((data) => {
+            return res
+              .status(200)
+              .json({ story: data[0], deletedComment: data[1] });
+          })
+          .catch((error) => {
+            return res.status(500).json({
+              errorMessage: "Failed to delete comment",
+              story: comment_id,
+              error: error,
+            });
           });
+      } else if (!story)
+        return res.status(404).json({
+          errorMessage: "story for comment has invalid id",
+          story: story_id,
         });
-    } else if (!story)
-      return res.status(404).json({
-        errorMessage: "story for comment has invalid id",
-        story: story_id,
-      });
-  } else if (video_id) {
-    const video = await Video.findById(video_id).exec();
-    if (video) {
-      video.comments.splice(video.comments.indexOf(video_id));
-      const videoSave = video.save();
-      const commentDeletion = Comment.findByIdAndDelete(comment_id).exec();
-      Promise.all([videoSave, commentDeletion])
-        .then((data) => {
-          return res.status(200).json(data);
-        })
-        .catch((error) => {
-          return res.status(500).json({
-            errorMessage: "Failed to delete comment",
-            video: comment_id,
-            error: error,
+    } else if (video_id) {
+      const video = await Video.findById(video_id).exec();
+      if (video) {
+        video.comments.splice(video.comments.indexOf(video_id));
+        const videoSave = video.save();
+        const commentDeletion = Comment.findByIdAndDelete(comment_id).exec();
+        Promise.all([videoSave, commentDeletion])
+          .then((data) => {
+            return res
+              .status(200)
+              .json({ video: data[0], deletedComment: data[1] });
+          })
+          .catch((error) => {
+            return res.status(500).json({
+              errorMessage: "Failed to delete comment",
+              video: comment_id,
+              error: error,
+            });
           });
+      } else if (!video)
+        return res.status(404).json({
+          errorMessage: "video for comment has invalid id",
+          video: video_id,
         });
-    } else if (!video)
-      return res.status(404).json({
-        errorMessage: "video for comment has invalid id",
-        video: video_id,
-      });
-  } else if (user_id) {
-    const user = await User.findById(user_id).exec();
-    if (user) {
-      user.comments.splice(user.comments.indexOf(user_id));
-      const userSave = user.save();
-      const commentDeletion = Comment.findByIdAndDelete(comment_id).exec();
-      Promise.all([userSave, commentDeletion])
-        .then((data) => {
-          return res.status(200).json(data);
-        })
-        .catch((error) => {
-          return res.status(500).json({
-            errorMessage: "Failed to delete comment",
-            user: comment_id,
-            error: error,
+    } else if (user_id) {
+      const user = await User.findById(user_id).exec();
+      if (user) {
+        user.comments.splice(user.comments.indexOf(user_id));
+        const userSave = user.save();
+        const commentDeletion = Comment.findByIdAndDelete(comment_id).exec();
+        Promise.all([userSave, commentDeletion])
+          .then((data) => {
+            return res
+              .status(200)
+              .json({ user: data[0], deletedComment: data[1] });
+          })
+          .catch((error) => {
+            return res.status(500).json({
+              errorMessage: "Failed to delete comment",
+              user: comment_id,
+              error: error,
+            });
           });
+      } else if (!user)
+        return res.status(404).json({
+          errorMessage: "user for comment has invalid id",
+          user: user_id,
         });
-    } else if (!user)
-      return res.status(404).json({
-        errorMessage: "user for comment has invalid id",
-        user: user_id,
-      });
+    }
   } else
-    Comment.findByIdAndDelete(comment_id, (error, comment) => {
-      if (error)
-        return res.status(500).json({
-          errorMessage: "Failed to delete comment",
-          comment: comment_id,
-          error: error,
-        });
-      else if (comment) return res.status(200).json(comment);
-    });
+    return res
+      .status(400)
+      .json({ errorMessage: "Comment not found", comment: comment_id });
 });
 
 router.post(
@@ -557,7 +634,9 @@ router.post(
         const commentSave = comment.save();
         Promise.all([storySave, commentSave])
           .then((data) => {
-            return res.status(200).json(data);
+            return res
+              .status(200)
+              .json({ story: data[0], newComment: data[1] });
           })
           .catch((error) => {
             return res.status(500).json({
@@ -580,7 +659,9 @@ router.post(
         const commentSave = comment.save();
         Promise.all([videoSave, commentSave])
           .then((data) => {
-            return res.status(200).json(data);
+            return res
+              .status(200)
+              .json({ video: data[0], newComment: data[1] });
           })
           .catch((error) => {
             return res.status(500).json({
@@ -603,7 +684,7 @@ router.post(
         const commentSave = comment.save();
         Promise.all([userSave, commentSave])
           .then((data) => {
-            return res.status(200).json(data);
+            return res.status(200).json({ user: data[0], newComment: data[1] });
           })
           .catch((error) => {
             return res.status(500).json({
