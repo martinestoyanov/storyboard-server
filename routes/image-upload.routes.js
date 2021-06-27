@@ -5,9 +5,9 @@ const hasBackendAuth = require("../middleware/hasBackendAuth");
 const uploader = require("../config/cloudinary.config");
 
 router.post(
-  "/upload",
+  "/",
   hasBackendAuth,
-  uploader.single("pictureUrl"),
+  uploader.single("pictureURL"),
   (req, res, next) => {
     if (!req.file) {
       next(new Error("No file uploaded"));
