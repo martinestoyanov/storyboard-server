@@ -3,7 +3,7 @@ const ObjectId = Schema.Types.ObjectId;
 
 const storySchema = new Schema(
   {
-    user: { type: ObjectId, ref: "User", required: true },
+    author: { type: ObjectId, ref: "User", required: true },
     title: String,
     text: String,
     genre: {
