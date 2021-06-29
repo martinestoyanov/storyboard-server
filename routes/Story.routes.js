@@ -25,7 +25,7 @@ router.get("/index", (req, res, next) => {
       ];
       return res
         .status(200)
-        .json({ stories: randomStory, total: storyData.length });
+        .json({ randomStory: randomStory[0]});
     } else {
       //respond with all stories
       return res
