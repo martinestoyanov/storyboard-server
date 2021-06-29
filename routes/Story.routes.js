@@ -23,9 +23,7 @@ router.get("/index", (req, res, next) => {
       const randomStory = [
         storyData[Math.floor(storyData.length * Math.random())],
       ];
-      return res
-        .status(200)
-        .json({ randomStory: randomStory[0]});
+      return res.status(200).json({ randomStory: randomStory[0] });
     } else {
       //respond with all stories
       return res
@@ -137,7 +135,7 @@ router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
   const story_id = req.params.id;
   const story = await Story.findById(story_id).exec();
   if (story) {
-    const { user: author_id, upvotes: upvoter_id } = req.body;
+    const { author: author_id, upvotes: upvoter_id } = req.body;
     if (upvoter_id) {
       // toggle a like for story by the given user
       if (story.upvotes.includes(upvoter_id))
@@ -155,9 +153,9 @@ router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
             error: error,
           });
         });
-    } else if (author_id && !(story.user === author_id)) {
+    } else if (author_id && !(story.author === author_id)) {
       //reassign story to the new author
-      const oldAuthor = await User.findById(story.user).exec();
+      const oldAuthor = await User.findById(story.author).exec();
       const newAuthor = await User.findById(author_id).exec();
       if (oldAuthor && newAuthor) {
         oldAuthor.stories.splice(oldAuthor.stories.indexOf(story_id), 1);
@@ -214,7 +212,7 @@ router.post("/:id/delete", hasBackendAuth, async (req, res, next) => {
   const story_id = req.params.id;
   const story = await Story.findById(story_id).exec();
   if (story) {
-    const author = await User.findById(story?.user).exec();
+    const author = await User.findById(story.author).exec();
     if (author) {
       author.stories.splice(author.stories.indexOf(story_id), 1);
       const authorSave = author.save();
@@ -244,7 +242,7 @@ router.post("/:id/delete", hasBackendAuth, async (req, res, next) => {
 });
 
 router.post("/create", hasBackendAuth, async (req, res, next) => {
-  const { user: author_id } = req.body;
+  const { author: author_id } = req.body;
   // console.log("Running create", req.body ,req.body.user);
   if (author_id) {
     // console.log("author_id passed properly");
