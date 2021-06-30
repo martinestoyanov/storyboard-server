@@ -118,7 +118,7 @@ router.get("/index", (req, res, next) => {
     }
   }
   //else there's a problem; handle it
-  return res.status(404).json({ errorMessage: "User must be provided" });
+ else return res.status(404).json({ errorMessage: "User must be provided" });
 });
 
 router.get("/:id", (req, res, next) => {
