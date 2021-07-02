@@ -401,12 +401,12 @@ router.post("/:id/delete", hasBackendAuth, async (req, res, next) => {
           });
         });
     } else if (!creator)
-      return res.status(404).json({
+      return res.status(400).json({
         errorMessage: "creator for video has invalid id",
         creator: creator_id,
       });
     else if (!story)
-      return res.status(404).json({
+      return res.status(400).json({
         errorMessage: "story for video has invalid id",
         story: story_id,
       });
@@ -418,6 +418,7 @@ router.post("/:id/delete", hasBackendAuth, async (req, res, next) => {
 
 router.post("/create", hasBackendAuth, async (req, res, next) => {
   const { user: creator_id, title, story: story_id } = req.body;
+  console.log("user: ", creator_id, "title: ", title, "story: ", story_id);
   if (creator_id && story_id) {
     if (!title) return invalidTitleResponse(title, res);
     const creator = await User.findById(creator_id).exec();
@@ -445,19 +446,19 @@ router.post("/create", hasBackendAuth, async (req, res, next) => {
           });
       }
     } else if (!creator)
-      return res.status(404).json({
+      return res.status(400).json({
         errorMessage: "creator of video has invalid id",
         creator: user_id,
       });
     else if (!story)
-      return res.status(404).json({
+      return res.status(400).json({
         errorMessage: "story for video has invalid id",
         story: story_id,
       });
-  } else return;
-  res
-    .status(404)
-    .json({ errorMessage: "Must supply valid user id and story id" });
+  } else
+    return res
+      .status(400)
+      .json({ errorMessage: "Must supply valid user id and story id" });
 });
 
 module.exports = router;

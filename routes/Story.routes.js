@@ -294,7 +294,7 @@ router.post("/create", hasBackendAuth, async (req, res, next) => {
           });
       }
     } else if (!author)
-      return res.status(404).json({
+      return res.status(400).json({
         errorMessage: "Author of story has invalid id",
         author: author_id,
       });
