@@ -118,7 +118,7 @@ router.get("/index", (req, res, next) => {
     }
   }
   //else there's a problem; handle it
- else return res.status(404).json({ errorMessage: "User must be provided" });
+  else return res.status(404).json({ errorMessage: "User must be provided" });
 });
 
 router.get("/:id", (req, res, next) => {
@@ -186,7 +186,10 @@ router.post(
             const newVideoSave = newVideo.save();
             const commentUpdate = Comment.findByIdAndUpdate(
               comment_id,
-              req.body
+              req.body,
+              {
+                new: true,
+              }
             );
             Promise.all([oldStorySave, newVideoSave, commentUpdate])
               .then((data) =>
@@ -224,7 +227,10 @@ router.post(
             const newUserSave = newUser.save();
             const commentUpdate = Comment.findByIdAndUpdate(
               comment_id,
-              req.body
+              req.body,
+              {
+                new: true,
+              }
             );
             Promise.all([oldStorySave, newUserSave, commentUpdate])
               .then((data) =>
@@ -266,7 +272,10 @@ router.post(
             const newStorySave = newStory.save();
             const commentUpdate = Comment.findByIdAndUpdate(
               comment_id,
-              req.body
+              req.body,
+              {
+                new: true,
+              }
             );
             Promise.all([oldVideoSave, newStorySave, commentUpdate])
               .then((data) =>
@@ -304,7 +313,10 @@ router.post(
             const newUserSave = newUser.save();
             const commentUpdate = Comment.findByIdAndUpdate(
               comment_id,
-              req.body
+              req.body,
+              {
+                new: true,
+              }
             );
             Promise.all([oldVideoSave, newUserSave, commentUpdate])
               .then((data) =>
@@ -346,7 +358,10 @@ router.post(
             const newVideoSave = newVideo.save();
             const commentUpdate = Comment.findByIdAndUpdate(
               comment_id,
-              req.body
+              req.body,
+              {
+                new: true,
+              }
             );
             Promise.all([oldUserSave, newVideoSave, commentUpdate])
               .then((data) =>
@@ -384,7 +399,10 @@ router.post(
             const newStorySave = newStory.save();
             const commentUpdate = Comment.findByIdAndUpdate(
               comment_id,
-              req.body
+              req.body,
+              {
+                new: true,
+              }
             );
             Promise.all([oldUserSave, newStorySave, commentUpdate])
               .then((data) =>
@@ -421,7 +439,13 @@ router.post(
           newStory.comments.push(comment_id);
           const oldStorySave = oldStory.save();
           const newStorySave = newStory.save();
-          const commentUpdate = Comment.findByIdAndUpdate(comment_id, req.body);
+          const commentUpdate = Comment.findByIdAndUpdate(
+            comment_id,
+            req.body,
+            {
+              new: true,
+            }
+          );
           Promise.all([oldStorySave, newStorySave, commentUpdate])
             .then((data) =>
               res.status(200).json({
@@ -456,7 +480,13 @@ router.post(
           newVideo.comments.push(comment_id);
           const oldVideoSave = oldVideo.save();
           const newVideoSave = newVideo.save();
-          const commentUpdate = Comment.findByIdAndUpdate(comment_id, req.body);
+          const commentUpdate = Comment.findByIdAndUpdate(
+            comment_id,
+            req.body,
+            {
+              new: true,
+            }
+          );
           Promise.all([oldVideoSave, newVideoSave, commentUpdate])
             .then((data) =>
               res.status(200).json({
@@ -491,7 +521,13 @@ router.post(
           newUser.comments.push(comment_id);
           const oldUserSave = oldUser.save();
           const newUserSave = newUser.save();
-          const commentUpdate = Comment.findByIdAndUpdate(comment_id, req.body);
+          const commentUpdate = Comment.findByIdAndUpdate(
+            comment_id,
+            req.body,
+            {
+              new: true,
+            }
+          );
           Promise.all([oldUserSave, newUserSave, commentUpdate])
             .then((data) =>
               res.status(200).json({
@@ -518,15 +554,22 @@ router.post(
             user: user_id,
           });
       } else
-        Comment.findByIdAndUpdate(comment_id, req.body, (error, comment) => {
-          if (error)
-            return res.status(500).json({
-              errorMessage: "Failed to update comment",
-              comment: comment_id,
-              error: error,
-            });
-          else if (comment) return res.status(200).json(comment);
-        });
+        Comment.findByIdAndUpdate(
+          comment_id,
+          req.body,
+          {
+            new: true,
+          },
+          (error, comment) => {
+            if (error)
+              return res.status(500).json({
+                errorMessage: "Failed to update comment",
+                comment: comment_id,
+                error: error,
+              });
+            else if (comment) return res.status(200).json(comment);
+          }
+        );
     } else if (!comment)
       return res
         .status(404)

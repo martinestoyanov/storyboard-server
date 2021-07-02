@@ -216,10 +216,9 @@ router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
           const newCreatorSave = newCreator.save();
           const oldStorySave = oldStory.save();
           const newStorySave = newStory.save();
-          const videoUpdate = Video.findByIdAndUpdate(
-            video_id,
-            req.body
-          ).exec();
+          const videoUpdate = Video.findByIdAndUpdate(video_id, req.body, {
+            new: true,
+          }).exec();
           Promise.all([
             oldCreatorSave,
             newCreatorSave,
@@ -275,10 +274,9 @@ router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
           newCreator.videos.push(video_id);
           const oldCreatorSave = oldCreator.save();
           const newCreatorSave = newCreator.save();
-          const videoUpdate = Video.findByIdAndUpdate(
-            video_id,
-            req.body
-          ).exec();
+          const videoUpdate = Video.findByIdAndUpdate(video_id, req.body, {
+            new: true,
+          }).exec();
           Promise.all([oldCreatorSave, newCreatorSave, videoUpdate])
             .then((data) => {
               return res.status(200).json({
@@ -319,10 +317,9 @@ router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
           newStory.video_contributions.push(video_id);
           const oldStorySave = oldStory.save();
           const newStorySave = newStory.save();
-          const videoUpdate = Video.findByIdAndUpdate(
-            video_id,
-            req.body
-          ).exec();
+          const videoUpdate = Video.findByIdAndUpdate(video_id, req.body, {
+            new: true,
+          }).exec();
           Promise.all([oldStorySave, newStorySave, videoUpdate])
             .then((data) => {
               return res.status(200).json({
@@ -354,7 +351,9 @@ router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
     else {
       if (titleUsedAlready(title)) return invalidTitleResponse(title, res);
       else {
-        Video.findByIdAndUpdate(video_id, req.body)
+        Video.findByIdAndUpdate(video_id, req.body, {
+          new: true,
+        })
           .then((video) => {
             return res.status(200).json(video);
           })

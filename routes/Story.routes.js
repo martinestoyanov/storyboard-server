@@ -180,10 +180,9 @@ router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
           newAuthor.stories.push(story_id);
           const oldAuthorSave = oldAuthor.save();
           const newAuthorSave = newAuthor.save();
-          const storyUpdate = Story.findByIdAndUpdate(
-            story_id,
-            req.body
-          ).exec();
+          const storyUpdate = Story.findByIdAndUpdate(story_id, req.body, {
+            new: true,
+          }).exec();
           Promise.all([oldAuthorSave, newAuthorSave, storyUpdate])
             .then((data) => {
               return res.status(200).json({
@@ -216,7 +215,9 @@ router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
       if (await isTitleInUse(author_id, title))
         return invalidTitleResponse(title, res);
       else {
-        Story.findByIdAndUpdate(story_id, req.body)
+        Story.findByIdAndUpdate(story_id, req.body, {
+          new: true,
+        })
           .then((story) => {
             return res.status(200).json(story);
           })
