@@ -3,14 +3,26 @@ const ObjectId = Schema.Types.ObjectId;
 
 const storySchema = new Schema(
   {
-    user: { type: ObjectId, ref: "User", required: true },
+    author: { type: ObjectId, ref: "User", required: true },
     title: String,
     text: String,
     genre: {
       type: String,
-      enum: ["Action/Adventure", "Comedy", "Drama", "Fantasy", "Horror", "Romance", "Romantic Comedy", "Sci-Fi", "Thriller/Mystery"]
+      enum: [
+        "Action/Adventure",
+        "Comedy",
+        "Drama",
+        "Fantasy",
+        "Horror",
+        "Romance",
+        "Romantic Comedy",
+        "Sci-Fi",
+        "Thriller/Mystery",
+      ],
     },
     video_contributions: [{ type: ObjectId, ref: "Video" }],
+    comments: [{ type: ObjectId, ref: "Comment" }],
+    upvotes: [{ type: ObjectId, ref: "User" }],
   },
   {
     timestamps: true,
