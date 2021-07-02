@@ -25,7 +25,7 @@ function invalidTitleResponse(title, res) {
     .json({ errorMessage: "Title for video is invalid", title: title });
 }
 
-router.get("/index", (req, res, next) => {
+router.get("/index", async (req, res, next) => {
   const query = req.query;
   const resHandler = (query, videoData) => {
     if (query?.start && query?.end) {
