@@ -123,7 +123,7 @@ router.get("/index", (req, res, next) => {
 
 router.get("/:id", (req, res, next) => {
   const commentQuery = Comment.findById(req.params.id);
-  if (req.query?.with) comentQuery.populate(parsePopulate(req.query.with));
+  if (req.query?.with) commentQuery.populate(parsePopulate(req.query.with));
   commentQuery
     .then((comment) => {
       console.log("READ: ", comment);
