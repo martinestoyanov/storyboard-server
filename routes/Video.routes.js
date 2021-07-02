@@ -47,8 +47,25 @@ router.get("/index", (req, res, next) => {
         .json({ videos: videoData, total: videoData.length });
     }
   };
-
-  if (query?.userName) {
+  if (query?.userName && query?.storyName) {
+    const videos = await Video.find()
+      .populate("user", "username")
+      .populate("story", "title")
+      .exec();
+    if (videos.length > 0) {
+      const foundVideos = videos.filter(
+        (vid) =>
+          vid.user?.username === query.userName &&
+          vid.story?.title === query.storyName
+      );
+      return resHandler(query, foundVideos);
+    } else
+      return res.status(400).json({
+        errorMessage: "No videos exist for given username and story",
+        creator: query.userName,
+        story: query.storyName,
+      });
+  } else if (query?.userName) {
     const userQuery = User.findOne({ username: query.userName });
     query.with
       ? userQuery.populate("videos")

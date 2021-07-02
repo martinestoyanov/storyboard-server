@@ -25,7 +25,7 @@ const videoSchema = new Schema(
     },
     story: { type: ObjectId, ref: "Story", required: true },
     comments: [{ type: ObjectId, ref: "Comment" }],
-    upvotes: { type: ObjectId, ref: "User" },
+    upvotes: [{ type: ObjectId, ref: "User" }],
   },
   {
     timestamps: true,
