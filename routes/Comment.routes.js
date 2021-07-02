@@ -126,7 +126,7 @@ router.get("/:id", (req, res, next) => {
   if (req.query?.with) commentQuery.populate(parsePopulate(req.query.with));
   commentQuery
     .then((comment) => {
-      console.log("READ: ", comment);
+      // console.log("READ: ", comment);
       if (!comment)
         return res.status(404).json({
           errorMessage: "Comment does not exist",

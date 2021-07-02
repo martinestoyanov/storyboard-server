@@ -136,7 +136,7 @@ router.get("/:id", (req, res, next) => {
         return res
           .status(404)
           .json({ errorMessage: "Story not found", story: req.params.id });
-      console.log("READ: ", story);
+      // console.log("READ: ", story);
       return res.status(200).json(story);
     })
     .catch((error) => {

@@ -50,7 +50,7 @@ router.get("/:id", (req, res, next) => {
   if (req.query?.with) userQuery.populate(parsePopulate(req.query.with));
   userQuery
     .then((user) => {
-      console.log("READ: ", user);
+      // console.log("READ: ", user);
       res.status(200).json(user);
     })
     .catch((error) => {

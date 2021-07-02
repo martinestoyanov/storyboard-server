@@ -50,14 +50,19 @@ router.get("/index", async (req, res, next) => {
   if (query?.userName && query?.storyName) {
     const videos = await Video.find()
       .populate("user", "username")
-      .populate("story", "title")
+      .populate({
+        path: "story",
+        populate: [{ path: "author"}],
+      })
       .exec();
     if (videos.length > 0) {
+      // console.log("all found videos", videos[0]);
       const foundVideos = videos.filter(
         (vid) =>
-          vid.user?.username === query.userName &&
+          vid.story?.author.username === query.userName &&
           vid.story?.title === query.storyName
       );
+      // console.log("foundVideos", foundVideos);
       return resHandler(query, foundVideos);
     } else
       return res.status(400).json({
@@ -154,7 +159,7 @@ router.get("/:id", (req, res, next) => {
         return res
           .status(404)
           .json({ errorMessage: "Video not found", video: req.params.id });
-      console.log("READ: ", video);
+      // console.log("READ: ", video);
       res.status(200).json(video);
     })
     .catch((error) => {
