@@ -153,26 +153,37 @@ router.post(
         story: story_id,
         video: video_id,
         user: user_id,
-        upvotes: upvoter_id,
-      } = req.body;
-      if (upvoter_id) {
-        // toggle a like for comment by the given user
-        if (comment.upvotes.includes(upvoter_id))
-          comment.upvotes.splice(comment.upvotes.indexOf(upvoter_id), 1);
-        else comment.upvotes.push(upvoter_id);
-        comment
-          .save()
-          .then((comment) => {
-            return res.status(200).json(comment);
-          })
-          .catch((error) => {
-            return res.status(500).json({
-              errorMessage: "Failed to update comment",
-              comment: comment_id,
-              error: error,
-            });
-          });
-      } else if (comment.story && !story_id) {
+        // upvotes: upvoter_id,
+      } = comment;
+      console.log(
+        "story:",
+        story_id,
+        "video:",
+        video_id,
+        "user:",
+        user_id,
+        "upvotes:",
+        // upvoter_id
+      );
+      // if (upvoter_id) {
+      //   // toggle a like for comment by the given user
+      //   if (comment.upvotes.includes(upvoter_id))
+      //     comment.upvotes.splice(comment.upvotes.indexOf(upvoter_id), 1);
+      //   else comment.upvotes.push(upvoter_id);
+      //   comment
+      //     .save()
+      //     .then((comment) => {
+      //       return res.status(200).json(comment);
+      //     })
+      //     .catch((error) => {
+      //       return res.status(500).json({
+      //         errorMessage: "Failed to update comment",
+      //         comment: comment_id,
+      //         error: error,
+      //       });
+      //     });
+      // } else
+      if (comment.story && !story_id) {
         //reassign story comment
         req.body.story = undefined;
         if (video_id) {
