@@ -9,6 +9,21 @@ function parsePopulate(paths) {
   return Array.isArray(paths) ? paths.join(" ") : paths;
 }
 
+async function isTitleInUse(author_id, title) {
+  if (!title) return false;
+  const titleUsedAlready = await Story.findOne({
+    author: author_id,
+    title: title,
+  }).exec();
+  return titleUsedAlready ? true : false;
+}
+
+function invalidTitleResponse(title, res) {
+  return res
+    .status(400)
+    .json({ errorMessage: "Title for story is invalid", title: title });
+}
+
 router.get("/index", (req, res, next) => {
   const query = req.query;
   const resHandler = (query, storyData) => {
@@ -121,7 +136,7 @@ router.get("/:id", (req, res, next) => {
         return res
           .status(404)
           .json({ errorMessage: "Story not found", story: req.params.id });
-      console.log("READ: ", story);
+      // console.log("READ: ", story);
       return res.status(200).json(story);
     })
     .catch((error) => {
@@ -131,11 +146,50 @@ router.get("/:id", (req, res, next) => {
     });
 });
 
+router.post("/top-content", async (req, res, next) => {
+  const topStories = await Story.aggregate([
+    {
+      $project: {
+        author: 1,
+        title: 1,
+        text: 1,
+        genre: 1,
+        video_contributions: 1,
+        comments: 1,
+        upvotes: 1,
+        total_upvotes: {
+          $size: "$upvotes",
+        },
+      },
+    },
+    {
+      $sort: {
+        total_upvotes: -1,
+      },
+    },
+    {
+      $limit: 10,
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "author",
+        foreignField: "_id",
+        as: "author",
+      },
+    },
+  ]);
+  if (topStories) {
+    console.log(topStories);
+    return res.status(200).json(topStories);
+  } else return res.status(500).json({ error });
+});
+
 router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
   const story_id = req.params.id;
   const story = await Story.findById(story_id).exec();
   if (story) {
-    const { author: author_id, upvotes: upvoter_id } = req.body;
+    const { author: author_id, title, upvotes: upvoter_id } = req.body;
     if (upvoter_id) {
       // toggle a like for story by the given user
       if (story.upvotes.includes(upvoter_id))
@@ -158,26 +212,32 @@ router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
       const oldAuthor = await User.findById(story.author).exec();
       const newAuthor = await User.findById(author_id).exec();
       if (oldAuthor && newAuthor) {
-        oldAuthor.stories.splice(oldAuthor.stories.indexOf(story_id), 1);
-        newAuthor.stories.push(story_id);
-        const oldAuthorSave = oldAuthor.save();
-        const newAuthorSave = newAuthor.save();
-        const storyUpdate = Story.findByIdAndUpdate(story_id, req.body).exec();
-        Promise.all([oldAuthorSave, newAuthorSave, storyUpdate])
-          .then((data) => {
-            return res.status(200).json({
-              originalAuthor: data[0],
-              newAuthor: data[1],
-              story: data[2],
+        if (await isTitleInUse(author_id, title))
+          return invalidTitleResponse(title, res);
+        else {
+          oldAuthor.stories.splice(oldAuthor.stories.indexOf(story_id), 1);
+          newAuthor.stories.push(story_id);
+          const oldAuthorSave = oldAuthor.save();
+          const newAuthorSave = newAuthor.save();
+          const storyUpdate = Story.findByIdAndUpdate(story_id, req.body, {
+            new: true,
+          }).exec();
+          Promise.all([oldAuthorSave, newAuthorSave, storyUpdate])
+            .then((data) => {
+              return res.status(200).json({
+                originalAuthor: data[0],
+                newAuthor: data[1],
+                story: data[2],
+              });
+            })
+            .catch((error) => {
+              return res.status(500).json({
+                errorMessage: "Failed to update story",
+                story: story_id,
+                error: error,
+              });
             });
-          })
-          .catch((error) => {
-            return res.status(500).json({
-              errorMessage: "Failed to update story",
-              story: story_id,
-              error: error,
-            });
-          });
+        }
       } else if (!oldAuthor)
         return res.status(404).json({
           errorMessage: "original author of story has invalid id",
@@ -190,18 +250,25 @@ router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
         });
     }
     // change other fields for story
-    else
-      Story.findByIdAndUpdate(story_id, req.body)
-        .then((story) => {
-          return res.status(200).json(story);
+    else {
+      if (await isTitleInUse(author_id, title))
+        return invalidTitleResponse(title, res);
+      else {
+        Story.findByIdAndUpdate(story_id, req.body, {
+          new: true,
         })
-        .catch((error) => {
-          return res.status(500).json({
-            errorMessage: "Failed to update story",
-            story: story_id,
-            error: error,
+          .then((story) => {
+            return res.status(200).json(story);
+          })
+          .catch((error) => {
+            return res.status(500).json({
+              errorMessage: "Failed to update story",
+              story: story_id,
+              error: error,
+            });
           });
-        });
+      }
+    }
   } else
     return res
       .status(400)
@@ -242,27 +309,32 @@ router.post("/:id/delete", hasBackendAuth, async (req, res, next) => {
 });
 
 router.post("/create", hasBackendAuth, async (req, res, next) => {
-  const { author: author_id } = req.body;
+  const { author: author_id, title } = req.body;
   // console.log("Running create", req.body ,req.body.user);
   if (author_id) {
     // console.log("author_id passed properly");
+    if (!title) return invalidTitleResponse(title, res);
     const author = await User.findById(author_id).exec();
     if (author) {
-      const story = new Story(req.body);
-      author.stories.push(story._id);
-      const authorSave = author.save();
-      const storySave = story.save();
-      Promise.all([authorSave, storySave])
-        .then((data) => {
-          return res.status(200).json({ author: data[0], newStory: data[1] });
-        })
-        .catch((error) => {
-          return res
-            .status(500)
-            .json({ errorMessage: "Failed to save new story", error: error });
-        });
+      if (await isTitleInUse(author_id, title))
+        return invalidTitleResponse(title, res);
+      else {
+        const story = new Story(req.body);
+        author.stories.push(story._id);
+        const authorSave = author.save();
+        const storySave = story.save();
+        Promise.all([authorSave, storySave])
+          .then((data) => {
+            return res.status(200).json({ author: data[0], newStory: data[1] });
+          })
+          .catch((error) => {
+            return res
+              .status(500)
+              .json({ errorMessage: "Failed to save new story", error: error });
+          });
+      }
     } else if (!author)
-      return res.status(404).json({
+      return res.status(400).json({
         errorMessage: "Author of story has invalid id",
         author: author_id,
       });

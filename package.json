@@ -9,6 +9,7 @@
   "dependencies": {
     "axios": "^0.21.1",
     "bcryptjs": "^2.4.3",
+    "clean-deep": "^3.4.0",
     "cloudinary": "^1.26.1",
     "connect-mongo": "^4.4.1",
     "cookie-parser": "^1.4.5",

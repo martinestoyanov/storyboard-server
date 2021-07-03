@@ -15,7 +15,7 @@ const userSchema = new Schema(
     pictureURL: {
       type: String,
       default:
-        "https://www.pngjoy.com/preview/c2q7b4g4u1u9p2_gray-circle-login-user-icon-png-transparent-png/",
+        "../images/profile-silhouette.png",
     },
     email: {
       type: String,

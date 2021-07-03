@@ -10,7 +10,22 @@ function parsePopulate(paths) {
   return Array.isArray(paths) ? paths.join(" ") : paths;
 }
 
-router.get("/index", (req, res, next) => {
+async function isTitleInUse(creator_id, title) {
+  if (!title) return false;
+  const titleUsedAlready = await Video.findOne({
+    user: creator_id,
+    title: title,
+  }).exec();
+  return titleUsedAlready ? true : false;
+}
+
+function invalidTitleResponse(title, res) {
+  return res
+    .status(400)
+    .json({ errorMessage: "Title for video is invalid", title: title });
+}
+
+router.get("/index", async (req, res, next) => {
   const query = req.query;
   const resHandler = (query, videoData) => {
     if (query?.start && query?.end) {
@@ -32,8 +47,30 @@ router.get("/index", (req, res, next) => {
         .json({ videos: videoData, total: videoData.length });
     }
   };
-
-  if (query?.userName) {
+  if (query?.userName && query?.storyName) {
+    const videos = await Video.find()
+      .populate("user", "username")
+      .populate({
+        path: "story",
+        populate: [{ path: "author"}],
+      })
+      .exec();
+    if (videos.length > 0) {
+      // console.log("all found videos", videos[0]);
+      const foundVideos = videos.filter(
+        (vid) =>
+          vid.story?.author.username === query.userName &&
+          vid.story?.title === query.storyName
+      );
+      // console.log("foundVideos", foundVideos);
+      return resHandler(query, foundVideos);
+    } else
+      return res.status(400).json({
+        errorMessage: "No videos exist for given username and story",
+        creator: query.userName,
+        story: query.storyName,
+      });
+  } else if (query?.userName) {
     const userQuery = User.findOne({ username: query.userName });
     query.with
       ? userQuery.populate("videos")
@@ -122,7 +159,7 @@ router.get("/:id", (req, res, next) => {
         return res
           .status(404)
           .json({ errorMessage: "Video not found", video: req.params.id });
-      console.log("READ: ", video);
+      // console.log("READ: ", video);
       res.status(200).json(video);
     })
     .catch((error) => {
@@ -136,7 +173,12 @@ router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
   const video_id = req.params.id;
   const video = await Video.findById(video_id).exec();
   if (video) {
-    const { user: creator_id, story: story_id, upvotes: upvoter_id } = req.body;
+    const {
+      user: creator_id,
+      title,
+      story: story_id,
+      upvotes: upvoter_id,
+    } = req.body;
     if (upvoter_id) {
       // toggle a like for video by the given user
       if (video.upvotes.includes(upvoter_id))
@@ -166,40 +208,46 @@ router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
       const oldCreator = await User.findById(video.user).exec();
       const newCreator = await User.findById(creator_id).exec();
       if (oldCreator && newCreator && oldStory && newStory) {
-        oldCreator.videos.splice(oldCreator.videos.indexOf(video_id), 1);
-        newCreator.videos.push(video_id);
-        oldStory.video_contributions.splice(
-          oldStory.video_contributions.indexOf(video_id)
-        );
-        newStory.video_contributions.push(video_id);
-        const oldCreatorSave = oldCreator.save();
-        const newCreatorSave = newCreator.save();
-        const oldStorySave = oldStory.save();
-        const newStorySave = newStory.save();
-        const videoUpdate = Video.findByIdAndUpdate(video_id, req.body).exec();
-        Promise.all([
-          oldCreatorSave,
-          newCreatorSave,
-          oldStorySave,
-          newStorySave,
-          videoUpdate,
-        ])
-          .then((data) => {
-            return res.status(200).json({
-              originalCreator: data[0],
-              newCreator: data[1],
-              originalStory: data[2],
-              newStory: data[3],
-              video: data[4],
+        if (titleUsedAlready(title)) return invalidTitleResponse(title, res);
+        else {
+          oldCreator.videos.splice(oldCreator.videos.indexOf(video_id), 1);
+          newCreator.videos.push(video_id);
+          oldStory.video_contributions.splice(
+            oldStory.video_contributions.indexOf(video_id),
+            1
+          );
+          newStory.video_contributions.push(video_id);
+          const oldCreatorSave = oldCreator.save();
+          const newCreatorSave = newCreator.save();
+          const oldStorySave = oldStory.save();
+          const newStorySave = newStory.save();
+          const videoUpdate = Video.findByIdAndUpdate(video_id, req.body, {
+            new: true,
+          }).exec();
+          Promise.all([
+            oldCreatorSave,
+            newCreatorSave,
+            oldStorySave,
+            newStorySave,
+            videoUpdate,
+          ])
+            .then((data) => {
+              return res.status(200).json({
+                originalCreator: data[0],
+                newCreator: data[1],
+                originalStory: data[2],
+                newStory: data[3],
+                video: data[4],
+              });
+            })
+            .catch((error) => {
+              return res.status(500).json({
+                errorMessage: "Failed to update video",
+                video: video_id,
+                error: error,
+              });
             });
-          })
-          .catch((error) => {
-            return res.status(500).json({
-              errorMessage: "Failed to update video",
-              video: video_id,
-              error: error,
-            });
-          });
+        }
       } else if (!oldCreator)
         return res.status(404).json({
           errorMessage: "original creator for video has invalid id",
@@ -225,26 +273,31 @@ router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
       const oldCreator = await User.findById(video.user).exec();
       const newCreator = await User.findById(creator_id).exec();
       if (oldCreator && newCreator) {
-        oldCreator.videos.splice(oldCreator.videos.indexOf(video_id), 1);
-        newCreator.videos.push(video_id);
-        const oldCreatorSave = oldCreator.save();
-        const newCreatorSave = newCreator.save();
-        const videoUpdate = Video.findByIdAndUpdate(video_id, req.body).exec();
-        Promise.all([oldCreatorSave, newCreatorSave, videoUpdate])
-          .then((data) => {
-            return res.status(200).json({
-              originalCreator: data[0],
-              newCreator: data[1],
-              video: data[2],
+        if (titleUsedAlready(title)) return invalidTitleResponse(title, res);
+        else {
+          oldCreator.videos.splice(oldCreator.videos.indexOf(video_id), 1);
+          newCreator.videos.push(video_id);
+          const oldCreatorSave = oldCreator.save();
+          const newCreatorSave = newCreator.save();
+          const videoUpdate = Video.findByIdAndUpdate(video_id, req.body, {
+            new: true,
+          }).exec();
+          Promise.all([oldCreatorSave, newCreatorSave, videoUpdate])
+            .then((data) => {
+              return res.status(200).json({
+                originalCreator: data[0],
+                newCreator: data[1],
+                video: data[2],
+              });
+            })
+            .catch((error) => {
+              return res.status(500).json({
+                errorMessage: "Failed to update video",
+                video: video_id,
+                error: error,
+              });
             });
-          })
-          .catch((error) => {
-            return res.status(500).json({
-              errorMessage: "Failed to update video",
-              video: video_id,
-              error: error,
-            });
-          });
+        }
       } else if (!oldCreator)
         return res.status(404).json({
           errorMessage: "original creator for video has invalid id",
@@ -260,29 +313,34 @@ router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
       const oldStory = await Story.findById(video.story).exec();
       const newStory = await Story.findById(story_id).exec();
       if (oldStory && newStory) {
-        oldStory.video_contributions.splice(
-          oldStory.video_contributions.indexOf(video_id),
-          1
-        );
-        newStory.video_contributions.push(video_id);
-        const oldStorySave = oldStory.save();
-        const newStorySave = newStory.save();
-        const videoUpdate = Video.findByIdAndUpdate(video_id, req.body).exec();
-        Promise.all([oldStorySave, newStorySave, videoUpdate])
-          .then((data) => {
-            return res.status(200).json({
-              originalStory: data[0],
-              newStory: data[1],
-              video: data[2],
+        if (titleUsedAlready(title)) return invalidTitleResponse(title, res);
+        else {
+          oldStory.video_contributions.splice(
+            oldStory.video_contributions.indexOf(video_id),
+            1
+          );
+          newStory.video_contributions.push(video_id);
+          const oldStorySave = oldStory.save();
+          const newStorySave = newStory.save();
+          const videoUpdate = Video.findByIdAndUpdate(video_id, req.body, {
+            new: true,
+          }).exec();
+          Promise.all([oldStorySave, newStorySave, videoUpdate])
+            .then((data) => {
+              return res.status(200).json({
+                originalStory: data[0],
+                newStory: data[1],
+                video: data[2],
+              });
+            })
+            .catch((error) => {
+              return res.status(500).json({
+                errorMessage: "Failed to update video",
+                video: video_id,
+                error: error,
+              });
             });
-          })
-          .catch((error) => {
-            return res.status(500).json({
-              errorMessage: "Failed to update video",
-              video: video_id,
-              error: error,
-            });
-          });
+        }
       } else if (!oldStory)
         return res.status(404).json({
           errorMessage: "original story for video has invalid id",
@@ -295,18 +353,24 @@ router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
         });
     }
     //change other fields for video
-    else
-      Video.findByIdAndUpdate(video_id, req.body)
-        .then((video) => {
-          return res.status(200).json(video);
+    else {
+      if (titleUsedAlready(title)) return invalidTitleResponse(title, res);
+      else {
+        Video.findByIdAndUpdate(video_id, req.body, {
+          new: true,
         })
-        .catch((error) => {
-          return res.status(500).json({
-            errorMessage: "Failed to update video",
-            video: video_id,
-            error: error,
+          .then((video) => {
+            return res.status(200).json(video);
+          })
+          .catch((error) => {
+            return res.status(500).json({
+              errorMessage: "Failed to update video",
+              video: video_id,
+              error: error,
+            });
           });
-        });
+      }
+    }
   } else
     return res
       .status(400)
@@ -341,12 +405,12 @@ router.post("/:id/delete", hasBackendAuth, async (req, res, next) => {
           });
         });
     } else if (!creator)
-      return res.status(404).json({
+      return res.status(400).json({
         errorMessage: "creator for video has invalid id",
         creator: creator_id,
       });
     else if (!story)
-      return res.status(404).json({
+      return res.status(400).json({
         errorMessage: "story for video has invalid id",
         story: story_id,
       });
@@ -357,42 +421,48 @@ router.post("/:id/delete", hasBackendAuth, async (req, res, next) => {
 });
 
 router.post("/create", hasBackendAuth, async (req, res, next) => {
-  const { user: creator_id, story: story_id } = req.body;
+  const { user: creator_id, title, story: story_id } = req.body;
+  console.log("user: ", creator_id, "title: ", title, "story: ", story_id);
   if (creator_id && story_id) {
+    if (!title) return invalidTitleResponse(title, res);
     const creator = await User.findById(creator_id).exec();
     const story = await Story.findById(story_id).exec();
     if (creator && story) {
-      const video = new Video(req.body);
-      creator.videos.push(video._id);
-      story.video_contributions.push(video._id);
-      const creatorSave = creator.save();
-      const storySave = story.save();
-      const videoSave = video.save();
-      Promise.all([creatorSave, storySave, videoSave])
-        .then((data) => {
-          return res
-            .status(200)
-            .json({ creator: data[0], story: data[1], newVideo: data[2] });
-        })
-        .catch((error) => {
-          return res
-            .status(500)
-            .json({ errorMessage: "Failed to save new video", error: error });
-        });
+      if (await isTitleInUse(creator_id, title))
+        return invalidTitleResponse(title, res);
+      else {
+        const video = new Video(req.body);
+        creator.videos.push(video._id);
+        story.video_contributions.push(video._id);
+        const creatorSave = creator.save();
+        const storySave = story.save();
+        const videoSave = video.save();
+        Promise.all([creatorSave, storySave, videoSave])
+          .then((data) => {
+            return res
+              .status(200)
+              .json({ creator: data[0], story: data[1], newVideo: data[2] });
+          })
+          .catch((error) => {
+            return res
+              .status(500)
+              .json({ errorMessage: "Failed to save new video", error: error });
+          });
+      }
     } else if (!creator)
-      return res.status(404).json({
+      return res.status(400).json({
         errorMessage: "creator of video has invalid id",
         creator: user_id,
       });
     else if (!story)
-      return res.status(404).json({
+      return res.status(400).json({
         errorMessage: "story for video has invalid id",
         story: story_id,
       });
-  } else return;
-  res
-    .status(404)
-    .json({ errorMessage: "Must supply valid user id and story id" });
+  } else
+    return res
+      .status(400)
+      .json({ errorMessage: "Must supply valid user id and story id" });
 });
 
 module.exports = router;

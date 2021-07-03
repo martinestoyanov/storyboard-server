@@ -22,7 +22,7 @@ const storySchema = new Schema(
     },
     video_contributions: [{ type: ObjectId, ref: "Video" }],
     comments: [{ type: ObjectId, ref: "Comment" }],
-    upvotes: { type: ObjectId, ref: "User" },
+    upvotes: [{ type: ObjectId, ref: "User" }],
   },
   {
     timestamps: true,
