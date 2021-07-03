@@ -146,6 +146,45 @@ router.get("/:id", (req, res, next) => {
     });
 });
 
+router.post("/top-content", async (req, res, next) => {
+  const topStories = await Story.aggregate([
+    {
+      $project: {
+        author: 1,
+        title: 1,
+        text: 1,
+        genre: 1,
+        video_contributions: 1,
+        comments: 1,
+        upvotes: 1,
+        total_upvotes: {
+          $size: "$upvotes",
+        },
+      },
+    },
+    {
+      $sort: {
+        total_upvotes: -1,
+      },
+    },
+    {
+      $limit: 10,
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "author",
+        foreignField: "_id",
+        as: "author",
+      },
+    },
+  ]);
+  if (topStories) {
+    console.log(topStories);
+    return res.status(200).json(topStories);
+  } else return res.status(500).json({ error });
+});
+
 router.post("/:id/update", hasBackendAuth, async (req, res, next) => {
   const story_id = req.params.id;
   const story = await Story.findById(story_id).exec();
